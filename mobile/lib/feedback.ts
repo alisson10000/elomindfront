@@ -1,14 +1,33 @@
 import { api } from "./api";
 
+export type FeedbackStatus = "pending_approval" | "approved" | "rejected" | string;
+
 export type FeedbackOut = {
   id: number;
   reflection_id: number;
-  therapist_id?: number | null;
-  content: string; // ajuste se o campo no schema tiver outro nome
-  status: "draft" | "pending" | "approved" | "rejected";
+
+  ia_generated_content: string;
+  ia_neuro_nutrition_tip?: string | null;
+  ia_activity_suggestion?: string | null;
+
+  status: FeedbackStatus;
+
+  therapist_approved_by?: number | null;
   therapist_notes?: string | null;
-  created_at: string;
-  updated_at?: string;
+
+  approved_at?: string | null;
+  created_at?: string | null;
+};
+
+export type FeedbackApprovePayload = {
+  ia_generated_content?: string | null;
+  ia_neuro_nutrition_tip?: string | null;
+  ia_activity_suggestion?: string | null;
+  therapist_notes?: string | null;
+};
+
+export type FeedbackRejectPayload = {
+  therapist_notes?: string | null;
 };
 
 export async function generateFeedbackForReflection(reflectionId: number): Promise<FeedbackOut> {
@@ -23,7 +42,7 @@ export async function listPendingFeedback(): Promise<FeedbackOut[]> {
 
 export async function approveFeedback(
   feedbackId: number,
-  payload: { therapist_text?: string } // ajuste conforme FeedbackApproveIn
+  payload: FeedbackApprovePayload
 ): Promise<FeedbackOut> {
   const res = await api.patch(`/feedback/${feedbackId}/approve`, payload);
   return res.data;
@@ -31,7 +50,7 @@ export async function approveFeedback(
 
 export async function rejectFeedback(
   feedbackId: number,
-  payload: { therapist_notes: string } // conforme FeedbackRejectIn
+  payload: FeedbackRejectPayload
 ): Promise<FeedbackOut> {
   const res = await api.patch(`/feedback/${feedbackId}/reject`, payload);
   return res.data;
@@ -39,7 +58,7 @@ export async function rejectFeedback(
 
 /**
  * ⚠️ Essa rota no seu backend é CLIENT ONLY.
- * Só vai funcionar quando o usuário logado for client.
+ * Só funciona quando o usuário logado for client.
  */
 export async function getClientFeedbackByReflection(reflectionId: number): Promise<FeedbackOut> {
   const res = await api.get(`/feedback/by-reflection/${reflectionId}`);
