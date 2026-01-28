@@ -1,29 +1,306 @@
-import { useEffect, useMemo, useState } from "react";
-import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getTherapistReflectionDetail } from "../../../lib/reflections";
 
-type ReflectionDetail = {
-  id: number;
-  client_id: number;
-  client_name: string;
-  feeling_after_session: string;
-  what_learned: string;
-  positive_point: string;
-  resistance_or_disagreement?: string | null;
-  created_at: string;
-};
+import {
+  getTherapistReflectionDetail,
+  type ReflectionDetail,
+} from "../../../lib/reflections";
 
-export default function TherapistReflectionDetail() {
+import {
+  generateFeedbackForReflection,
+  approveFeedback,
+  rejectFeedback,
+  type FeedbackOut,
+} from "../../../lib/feedback";
+
+import { makeStyles } from "./styles";
+
+// ======================
+// Helpers
+// ======================
+function formatDate(iso?: string | null) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
+function statusLabel(status?: string | null) {
+  const s = (status ?? "").toLowerCase();
+  if (s === "approved") return "Aprovado";
+  if (s === "rejected") return "Rejeitado";
+  if (s === "pending_approval") return "Pendente (aguardando terapeuta)";
+  return status ?? "—";
+}
+
+// ======================
+// Componentes locais
+// ======================
+function Card({
+  theme,
+  title,
+  children,
+}: {
+  theme: any;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const s = makeStyles(theme);
+  return (
+    <View style={s.card}>
+      <Text style={s.cardTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+// ======================
+// Feedback Section
+// ======================
+function FeedbackSection({
+  theme,
+  reflectionId,
+  onAfterAction,
+}: {
+  theme: any;
+  reflectionId: number;
+  onAfterAction: () => Promise<void>;
+}) {
+  const s = makeStyles(theme);
+
+  const [fbLoading, setFbLoading] = useState(false);
+  const [fb, setFb] = useState<FeedbackOut | null>(null);
+
+  // Campos editáveis (terapeuta)
+  const [iaContent, setIaContent] = useState("");
+  const [neuroTip, setNeuroTip] = useState("");
+  const [activity, setActivity] = useState("");
+  const [therapistNotes, setTherapistNotes] = useState("");
+
+  const fillFromFeedback = useCallback((x: FeedbackOut) => {
+    setIaContent(x.ia_generated_content ?? "");
+    setNeuroTip(x.ia_neuro_nutrition_tip ?? "");
+    setActivity(x.ia_activity_suggestion ?? "");
+    setTherapistNotes(x.therapist_notes ?? "");
+  }, []);
+
+  async function handleGenerate() {
+    try {
+      setFbLoading(true);
+      const created = await generateFeedbackForReflection(reflectionId);
+      setFb(created);
+      fillFromFeedback(created);
+    } catch (e: any) {
+      console.log("❌ generateFeedbackForReflection:", e?.message);
+      Alert.alert("Erro", "Não foi possível gerar o feedback por IA.");
+    } finally {
+      setFbLoading(false);
+    }
+  }
+
+  async function handleApprove() {
+    if (!fb?.id) {
+      Alert.alert("Atenção", "Gere o feedback primeiro.");
+      return;
+    }
+    if (!iaContent.trim()) {
+      Alert.alert("Atenção", "O texto do feedback não pode ficar vazio.");
+      return;
+    }
+
+    try {
+      setFbLoading(true);
+
+      const updated = await approveFeedback(fb.id, {
+        ia_generated_content: iaContent,
+        ia_neuro_nutrition_tip: neuroTip || null,
+        ia_activity_suggestion: activity || null,
+        therapist_notes: therapistNotes || null,
+      });
+
+      setFb(updated);
+      fillFromFeedback(updated);
+
+      Alert.alert("Ok", "Feedback aprovado e liberado para o cliente.");
+      await onAfterAction();
+    } catch (e: any) {
+      console.log("❌ approveFeedback:", e?.message);
+      Alert.alert("Erro", "Não foi possível aprovar o feedback.");
+    } finally {
+      setFbLoading(false);
+    }
+  }
+
+  async function handleReject() {
+    if (!fb?.id) {
+      Alert.alert("Atenção", "Gere o feedback primeiro.");
+      return;
+    }
+    if (!therapistNotes.trim()) {
+      Alert.alert("Atenção", "Informe uma nota/motivo para a rejeição.");
+      return;
+    }
+
+    try {
+      setFbLoading(true);
+
+      const updated = await rejectFeedback(fb.id, {
+        therapist_notes: therapistNotes,
+      });
+
+      setFb(updated);
+      fillFromFeedback(updated);
+
+      Alert.alert("Ok", "Feedback rejeitado.");
+      await onAfterAction();
+    } catch (e: any) {
+      console.log("❌ rejectFeedback:", e?.message);
+      Alert.alert("Erro", "Não foi possível rejeitar o feedback.");
+    } finally {
+      setFbLoading(false);
+    }
+  }
+
+  return (
+    <Card theme={theme} title="Feedback (IA + Aprovação)">
+      <View style={{ gap: 10 }}>
+        <Text style={s.metaMuted}>
+          Status: <Text style={s.metaStrong}>{statusLabel(fb?.status)}</Text>
+        </Text>
+
+        {!fb ? (
+          <Pressable
+            onPress={handleGenerate}
+            disabled={fbLoading}
+            hitSlop={16}
+            style={[
+              s.btn,
+              s.btnPrimary,
+              { opacity: fbLoading ? 0.7 : 1 },
+            ]}
+          >
+            <Text style={s.btnPrimaryText}>
+              {fbLoading ? "Gerando..." : "Gerar feedback por IA"}
+            </Text>
+          </Pressable>
+        ) : (
+          <>
+            <Text style={s.metaMuted}>Você pode editar antes de aprovar.</Text>
+
+            <Text style={s.inputLabel}>Texto do feedback</Text>
+            <TextInput
+              value={iaContent}
+              onChangeText={setIaContent}
+              multiline
+              placeholder="Edite o feedback aqui..."
+              placeholderTextColor={theme.muted}
+              style={[s.input, { minHeight: 120 }]}
+            />
+
+            <Text style={s.inputLabel}>Dica (Neuro Nutrição)</Text>
+            <TextInput
+              value={neuroTip}
+              onChangeText={setNeuroTip}
+              multiline
+              placeholder="Opcional..."
+              placeholderTextColor={theme.muted}
+              style={[s.input, { minHeight: 70 }]}
+            />
+
+            <Text style={s.inputLabel}>Sugestão de atividade</Text>
+            <TextInput
+              value={activity}
+              onChangeText={setActivity}
+              multiline
+              placeholder="Opcional..."
+              placeholderTextColor={theme.muted}
+              style={[s.input, { minHeight: 70 }]}
+            />
+
+            <Text style={s.inputLabel}>Notas do terapeuta</Text>
+            <TextInput
+              value={therapistNotes}
+              onChangeText={setTherapistNotes}
+              multiline
+              placeholder="Use para justificar rejeição ou registrar observações..."
+              placeholderTextColor={theme.muted}
+              style={[s.input, { minHeight: 80 }]}
+            />
+
+            <View style={s.row}>
+              <View style={s.flex1}>
+                <Pressable
+                  onPress={handleApprove}
+                  disabled={fbLoading || fb?.status === "approved"}
+                  hitSlop={16}
+                  style={[
+                    s.btn,
+                    s.btnPrimary,
+                    {
+                      opacity:
+                        fbLoading || fb?.status === "approved" ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={s.btnPrimaryText}>
+                    {fbLoading ? "Salvando..." : "Aprovar"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={s.flex1}>
+                <Pressable
+                  onPress={handleReject}
+                  disabled={fbLoading || fb?.status === "rejected"}
+                  hitSlop={16}
+                  style={[
+                    s.btn,
+                    s.btnDanger,
+                    {
+                      opacity:
+                        fbLoading || fb?.status === "rejected" ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={s.btnDangerText}>
+                    {fbLoading ? "Salvando..." : "Rejeitar"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </>
+        )}
+      </View>
+    </Card>
+  );
+}
+
+// ======================
+// Page
+// ======================
+export default function TherapistReflectionDetailScreen() {
   const r = useRouter();
   const params = useLocalSearchParams();
 
+  // ✅ hooks precisam estar dentro do componente
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const s = makeStyles(theme);
 
   const reflectionId = useMemo(() => {
     const raw = (params as any)?.id;
@@ -40,21 +317,13 @@ export default function TherapistReflectionDetail() {
     else r.replace("/(therapist)/reflections" as any);
   }
 
-  function formatDate(iso: string) {
-    try {
-      return new Date(iso).toLocaleString();
-    } catch {
-      return iso;
-    }
-  }
-
-  async function load() {
+  const load = useCallback(async () => {
     if (!reflectionId) return;
 
     try {
       setLoading(true);
       const res = await getTherapistReflectionDetail(reflectionId);
-      setData(res ?? null);
+      setData(res);
     } catch (e: any) {
       console.log("❌ getTherapistReflectionDetail:", e?.message);
       setData(null);
@@ -62,55 +331,26 @@ export default function TherapistReflectionDetail() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [reflectionId]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reflectionId]);
-
-  function Card({ title, children }: { title: string; children: any }) {
-    return (
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: theme.border,
-          backgroundColor: theme.card,
-          borderRadius: 14,
-          padding: 14,
-        }}
-      >
-        <Text style={{ color: theme.text, fontWeight: "900", marginBottom: 8 }}>
-          {title}
-        </Text>
-        {children}
-      </View>
-    );
-  }
+  }, [load]);
 
   if (!reflectionId) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
-        <View style={{ flex: 1, padding: 16, justifyContent: "center" }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900", marginBottom: 10 }}>
+      <SafeAreaView style={s.safe} edges={["top", "left", "right"]}>
+        <View style={s.emptyCenter}>
+          <Text style={s.titleBig}>
             Não consegui abrir essa reflexão (ID inválido).
           </Text>
 
           <Pressable
             onPress={() => r.replace("/(therapist)/reflections" as any)}
             hitSlop={16}
-            style={{
-              paddingVertical: 12,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-            }}
+            style={s.btn}
           >
-            <Text style={{ color: theme.text, fontWeight: "900" }}>
-              Voltar para Pendentes
-            </Text>
+            <Text style={s.btnText}>Voltar para Pendentes</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -118,119 +358,89 @@ export default function TherapistReflectionDetail() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
+    <SafeAreaView style={s.safe} edges={["top", "left", "right"]}>
       {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          backgroundColor: theme.background,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <Pressable
-          onPress={goBackSafe}
-          hitSlop={18}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
-        >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+      <View style={s.header}>
+        <Pressable onPress={goBackSafe} hitSlop={18} style={s.backBtn}>
+          <Text style={s.backBtnText}>← Voltar</Text>
         </Pressable>
 
         <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            Reflexão #{reflectionId}
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
-            Detalhe para análise do terapeuta
-          </Text>
+          <Text style={s.headerTitle}>Reflexão #{reflectionId}</Text>
+          <Text style={s.headerSubtitle}>Detalhe para análise do terapeuta</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
+      <ScrollView contentContainerStyle={s.content}>
         {loading && !data ? (
-          <View style={{ paddingTop: 30, alignItems: "center" }}>
+          <View style={s.loadingWrap}>
             <ActivityIndicator />
-            <Text style={{ marginTop: 10, color: theme.muted }}>
-              Carregando detalhes...
-            </Text>
+            <Text style={s.loadingText}>Carregando detalhes...</Text>
           </View>
         ) : data ? (
-          <View style={{ gap: 12 }}>
-            <Text style={{ color: theme.muted }}>
-              Cliente: <Text style={{ color: theme.text, fontWeight: "900" }}>{data.client_name}</Text>
+          <View style={s.gap12}>
+            <Text style={s.metaMuted}>
+              Cliente:{" "}
+              <Text style={s.metaStrong}>
+                {data.client_name ?? `Cliente #${data.client_id}`}
+              </Text>
             </Text>
 
-            <Text style={{ color: theme.muted }}>
-              {formatDate(data.created_at)}
-            </Text>
+            <Text style={s.metaMuted}>{formatDate(data.created_at)}</Text>
 
-            <Card title="Como o cliente se sentiu após a sessão?">
+            <Card theme={theme} title="Como o cliente se sentiu após a sessão?">
               <Text style={{ color: theme.text, lineHeight: 20 }}>
                 {data.feeling_after_session}
               </Text>
             </Card>
 
-            <Card title="O que ele(a) aprendeu ou percebeu?">
+            <Card theme={theme} title="O que ele(a) aprendeu ou percebeu?">
               <Text style={{ color: theme.text, lineHeight: 20 }}>
                 {data.what_learned}
               </Text>
             </Card>
 
-            <Card title="Ponto positivo">
+            <Card theme={theme} title="Ponto positivo">
               <Text style={{ color: theme.text, lineHeight: 20 }}>
                 {data.positive_point}
               </Text>
             </Card>
 
             {!!data.resistance_or_disagreement && (
-              <Card title="Resistência/discordância">
+              <Card theme={theme} title="Resistência/discordância">
                 <Text style={{ color: theme.text, lineHeight: 20 }}>
                   {data.resistance_or_disagreement}
                 </Text>
               </Card>
             )}
 
-            {/* Próximo passo: gerar/aprovar feedback */}
-            <Card title="Feedback (próximo passo)">
-              <Text style={{ color: theme.muted, lineHeight: 20 }}>
-                Aqui vamos adicionar: gerar feedback por IA e aprovar/publicar para o cliente.
-              </Text>
-            </Card>
+            <FeedbackSection
+              theme={theme}
+              reflectionId={reflectionId}
+              onAfterAction={load}
+            />
           </View>
         ) : (
-          <Card title="Não encontrado">
+          <Card theme={theme} title="Não encontrado">
             <Text style={{ color: theme.muted, lineHeight: 20 }}>
               Não encontrei os detalhes dessa reflexão.
             </Text>
           </Card>
         )}
 
-        <Pressable
-          onPress={load}
-          hitSlop={16}
-          style={{
-            marginTop: 16,
-            paddingVertical: 12,
-            borderRadius: 12,
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
-        >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>Atualizar</Text>
-        </Pressable>
+        {/* Atualizar */}
+        <View style={s.mt16}>
+          <Pressable
+            onPress={load}
+            disabled={loading}
+            hitSlop={16}
+            style={[s.btn, { opacity: loading ? 0.6 : 1 }]}
+          >
+            <Text style={s.btnText}>
+              {loading ? "Atualizando..." : "Atualizar"}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
