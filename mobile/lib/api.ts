@@ -6,28 +6,44 @@ import { getToken, clearToken } from "./token";
 import { clearSessionOnly } from "./remember";
 
 /**
- * Mantém sua lógica atual de escolha de baseURL.
+ * Fallbacks DEV (se .env estiver vazio)
+ */
+const DEV_PC_IP = "192.168.1.182";
+const DEV_DEVICE_URL = `http://${DEV_PC_IP}:8000`;
+const DEV_ANDROID_EMULATOR_URL = "http://10.0.2.2:8000";
+
+/**
+ * Decide baseURL:
+ * - WEB -> localhost (ou .env)
+ * - ANDROID -> por padrão DEVICE (celular físico)
+ *    - só usa EMULATOR se EXPO_PUBLIC_ANDROID_TARGET=emulator
+ * - iOS/outros -> DEVICE
  */
 function pickBaseURL() {
-  if (Platform.OS === "web") return process.env.EXPO_PUBLIC_API_URL_WEB;
+  // WEB
+  if (Platform.OS === "web") {
+    return process.env.EXPO_PUBLIC_API_URL_WEB || "http://localhost:8000";
+  }
 
-  // ✅ Android (emulador e celular) -> SEMPRE usar o IP do PC (DEVICE)
+  // ANDROID
   if (Platform.OS === "android") {
-    return process.env.EXPO_PUBLIC_API_URL_DEVICE;
+    const target = (process.env.EXPO_PUBLIC_ANDROID_TARGET || "device").toLowerCase();
+
+    const emulatorUrl =
+      process.env.EXPO_PUBLIC_API_URL_ANDROID_EMULATOR || DEV_ANDROID_EMULATOR_URL;
+
+    const deviceUrl =
+      process.env.EXPO_PUBLIC_API_URL_DEVICE || DEV_DEVICE_URL;
+
+    // ✅ padrão: device (celular físico)
+    return target === "emulator" ? emulatorUrl : deviceUrl;
   }
 
   // iOS / outros
-  return process.env.EXPO_PUBLIC_API_URL_DEVICE;
+  return process.env.EXPO_PUBLIC_API_URL_DEVICE || DEV_DEVICE_URL;
 }
 
-const BASE_URL = pickBaseURL();
-
-// ✅ fallback DEV (troque pelo IP do seu PC)
-const FALLBACK_DEVICE = "http://192.168.0.106:8000";
-
-const FINAL_BASE_URL =
-  BASE_URL ||
-  (Platform.OS === "android" ? FALLBACK_DEVICE : "http://localhost:8000");
+const FINAL_BASE_URL = pickBaseURL();
 
 console.log("🌐 API BASE_URL:", FINAL_BASE_URL, "| Platform:", Platform.OS);
 
@@ -81,14 +97,13 @@ async function forceLogout(reason: string) {
 }
 
 /**
- * Interceptor REQUEST (mantém seu comportamento)
+ * Interceptor REQUEST
  */
 api.interceptors.request.use(async (config) => {
   const url = config.url ?? "";
   const u = normalizeUrl(url);
   const method = (config.method ?? "GET").toUpperCase();
 
-  // rastreio
   if (u.includes("/auth/me")) {
     console.log("🕵️ /auth/me foi chamado! Stack:", new Error().stack);
   }
@@ -112,11 +127,7 @@ api.interceptors.request.use(async (config) => {
 });
 
 /**
- * Interceptor RESPONSE (IMPORTANTE)
- * - 401: sessão expirada em rota privada -> desloga
- * - 403 inactive:
- *    - se for /auth/login -> NÃO desloga aqui (LoginScreen mostra mensagem)
- *    - se for rota privada -> alerta + desloga
+ * Interceptor RESPONSE
  */
 api.interceptors.response.use(
   (response) => response,
@@ -134,24 +145,19 @@ api.interceptors.response.use(
 
     console.log("❌ API error:", status, url, detailRaw);
 
-    // Evita spam de logout simultâneo
     if (isForcingLogout) return Promise.reject(error);
 
-    // 401: token inválido/expirado
     if (status === 401) {
       Alert.alert("Sessão expirada", "Faça login novamente.");
       await forceLogout("401 Unauthorized");
       return Promise.reject(error);
     }
 
-    // 403: usuário inativo
     if (status === 403 && detail.includes("inactive")) {
-      // ✅ Se for erro no LOGIN, deixa o LoginScreen tratar e mostrar a mensagem correta
       if (url.includes("/auth/login")) {
         return Promise.reject(error);
       }
 
-      // ✅ Se for rota privada, aí sim desloga
       Alert.alert(
         "Conta desativada",
         "Seu acesso foi desativado. Fale com o terapeuta/suporte."

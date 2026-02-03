@@ -78,9 +78,24 @@ export default function TherapistHome() {
           }}
         >
           <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
-            Reflexões dos Clientes
+            Reflexões pendentes dos Clientes
           </Text>
         </Pressable>
+        <Pressable
+  onPress={() => router.push("/(therapist)/feedbacks")}
+  style={{
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.card,
+    alignItems: "center",
+  }}
+>
+  <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
+    Feedbacks já dados
+  </Text>
+</Pressable>
 
         <Pressable
           onPress={() => router.push("/(therapist)/(tabs)/profile")}
