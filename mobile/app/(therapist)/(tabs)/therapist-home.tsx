@@ -112,6 +112,21 @@ export default function TherapistHome() {
             Meu Perfil
           </Text>
         </Pressable>
+        <Pressable
+  onPress={() => router.push("/(therapist)/invite-client" )}
+  style={{
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.card,
+    alignItems: "center",
+  }}
+>
+  <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
+    Convidar Cliente
+  </Text>
+</Pressable>
       </View>
 
       <Text
