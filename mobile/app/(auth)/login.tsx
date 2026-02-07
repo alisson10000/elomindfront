@@ -112,15 +112,33 @@ export default function LoginScreen() {
       // limpa senha do estado (boa prática)
       setPassword("");
 
-      // 3) Vai para a área correta
+      // ✅ 3) LGPD: só para CLIENTE e só aparece 1x
+      if (role === "client") {
+        try {
+          const c = await api.get("/consents/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const accepted = Boolean(c.data?.accepted);
+
+          if (!accepted) {
+            router.replace("/consent-lgpd" as any);
+            return;
+          }
+        } catch {
+          // Se falhar a checagem, por segurança mostra LGPD
+          router.replace("/consent-lgpd" as any);
+          return;
+        }
+      }
+
+      // 4) Vai para a área correta
       router.replace(routeForRole(role) as any);
     } catch (err: any) {
-      // ✅ AQUI é o ajuste: tratar 403 User inactive e 401 credenciais inválidas
+      // ✅ tratar 403 User inactive e 401 credenciais inválidas
       const status = err?.response?.status;
       const detailRaw =
-        err?.response?.data?.detail ??
-        err?.response?.data?.message ??
-        "";
+        err?.response?.data?.detail ?? err?.response?.data?.message ?? "";
 
       const detail = String(detailRaw).toLowerCase();
 
@@ -143,6 +161,16 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // ✅ rota REAL (group não entra na URL)
+  function goToInviteCode() {
+    router.push("/invite-code" as any);
+  }
+
+  // ✅ rota REAL (group não entra na URL)
+  function goToForgotPassword() {
+    router.push("/forgot-password" as any);
   }
 
   return (
@@ -192,7 +220,9 @@ export default function LoginScreen() {
               returnKeyType="next"
             />
 
-            <Text style={[styles.label, styles.labelSpacing, { color: theme.text }]}>
+            <Text
+              style={[styles.label, styles.labelSpacing, { color: theme.text }]}
+            >
               Senha
             </Text>
             <TextInput
@@ -245,6 +275,42 @@ export default function LoginScreen() {
             >
               <Text style={[styles.buttonText, { color: "#FFFFFF" }]}>
                 {loading ? "Entrando..." : "Entrar"}
+              </Text>
+            </Pressable>
+
+            {/* ✅ Esqueci minha senha */}
+            <Pressable
+              onPress={goToForgotPassword}
+              disabled={loading}
+              style={{
+                marginTop: 10,
+                paddingVertical: 8,
+                alignItems: "center",
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              <Text style={{ color: theme.primary, fontWeight: "800" }}>
+                Esqueci minha senha
+              </Text>
+            </Pressable>
+
+            {/* ✅ link para fluxo de convite */}
+            <Pressable
+              onPress={goToInviteCode}
+              disabled={loading}
+              style={{
+                marginTop: 12,
+                paddingVertical: 10,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.input,
+                alignItems: "center",
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              <Text style={{ fontWeight: "800", color: theme.text }}>
+                Tenho um código de convite
               </Text>
             </Pressable>
 
