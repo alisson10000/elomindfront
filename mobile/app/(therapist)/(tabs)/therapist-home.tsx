@@ -4,6 +4,32 @@ import { router } from "expo-router";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+type CardButtonProps = {
+  label: string;
+  onPress: () => void;
+  theme: any;
+};
+
+function CardButton({ label, onPress, theme }: CardButtonProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.border,
+        backgroundColor: theme.card,
+        alignItems: "center",
+      }}
+    >
+      <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export default function TherapistHome() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
@@ -39,7 +65,6 @@ export default function TherapistHome() {
         Gerencie seus clientes e acompanhe as reflexões.
       </Text>
 
-      {/* Card principal */}
       <View
         style={{
           borderWidth: 1,
@@ -50,83 +75,36 @@ export default function TherapistHome() {
           gap: 14,
         }}
       >
-        <Pressable
-          onPress={() => router.push("/(therapist)/client")}
-          style={{
-            padding: 16,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
-            Meus Clientes
-          </Text>
-        </Pressable>
+        {/* ✅ Use o group explicitamente para evitar conflito de rotas */}
+        <CardButton
+          label="Meus Clientes"
+          theme={theme}
+          onPress={() => router.push("/(therapist)/client" as any)}
+        />
 
-        <Pressable
-          onPress={() => router.push("/(therapist)/reflections")}
-          style={{
-            padding: 16,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
-            Reflexões pendentes dos Clientes
-          </Text>
-        </Pressable>
-        <Pressable
-  onPress={() => router.push("/(therapist)/feedbacks")}
-  style={{
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    alignItems: "center",
-  }}
->
-  <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
-    Feedbacks já dados
-  </Text>
-</Pressable>
+        <CardButton
+          label="Reflexões pendentes dos Clientes"
+          theme={theme}
+          onPress={() => router.push("/(therapist)/reflections" as any)}
+        />
 
-        <Pressable
-          onPress={() => router.push("/(therapist)/(tabs)/profile")}
-          style={{
-            padding: 16,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
-            Meu Perfil
-          </Text>
-        </Pressable>
-        <Pressable
-  onPress={() => router.push("/(therapist)/invite-client" )}
-  style={{
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    alignItems: "center",
-  }}
->
-  <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>
-    Convidar Cliente
-  </Text>
-</Pressable>
+        <CardButton
+          label="Feedbacks já dados"
+          theme={theme}
+          onPress={() => router.push("/(therapist)/feedbacks" as any)}
+        />
+
+        <CardButton
+          label="Meu Perfil"
+          theme={theme}
+          onPress={() => router.push("/(therapist)/(tabs)/profile" as any)}
+        />
+
+        <CardButton
+          label="Convidar Cliente"
+          theme={theme}
+          onPress={() => router.push("/(therapist)/invite-client" as any)}
+        />
       </View>
 
       <Text

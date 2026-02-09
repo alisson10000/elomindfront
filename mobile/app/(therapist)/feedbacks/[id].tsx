@@ -187,7 +187,7 @@ export default function TherapistClientFeedbacksScreen() {
               return (
                 <Pressable
                   // ✅ aqui abrimos o detalhe por reflectionId
-                  onPress={() => r.push(`/(therapist)/feedbacks/detail/${item.reflection_id}` as any)}
+                  onPress={() => r.push(`/(therapist)/feedbacks/details/${item.reflection_id}` as any)}
                   style={{
                     padding: 14,
                     borderWidth: 1,

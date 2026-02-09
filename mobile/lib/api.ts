@@ -69,6 +69,8 @@ function isPublicRoute(url: string) {
   return (
     u.includes("/auth/login") ||
     u.includes("/auth/signup") ||
+    u.includes("/auth/forgot-password") || // ✅ novo (reset via email/token)
+    u.includes("/auth/reset-password") ||  // ✅ novo (salvar nova senha)
     u.includes("/docs") ||
     u.includes("/openapi.json") ||
     u.includes("/health")
