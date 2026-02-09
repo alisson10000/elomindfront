@@ -1,13 +1,12 @@
-// app/(therapist)/invite-client/index.tsx
-import React, { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
+  FlatList,
   Pressable,
-  Alert,
+  RefreshControl,
   ActivityIndicator,
-  ScrollView,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,159 +14,220 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-import { sendInvitation } from "@/lib/invitations";
+import { api } from "@/lib/api";
+import { getToken } from "@/lib/token";
+import { listFeedbacksByClient } from "@/lib/feedback";
 
-export default function InviteClientScreen() {
+type ClientItem = {
+  id: number;
+  name?: string | null;
+  email?: string | null;
+};
+
+type ClientWithFeedback = ClientItem & {
+  feedbackCount: number;
+};
+
+function pickName(c: any): string | null {
+  return (
+    c?.name ??
+    c?.full_name ??
+    c?.client_name ??
+    c?.user?.name ??
+    c?.user?.full_name ??
+    null
+  );
+}
+
+/**
+ * ✅ No seu backend (Swagger) existe GET /users/clients
+ * então é daqui que vamos puxar a lista de clientes.
+ */
+async function fetchClients(token: string): Promise<ClientItem[]> {
+  const res = await api.get("/users/clients", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const raw = (res.data?.items ?? res.data) as any;
+  const arr = Array.isArray(raw) ? raw : [];
+
+  return arr
+    .map((c: any) => ({
+      id: Number(c?.id ?? c?.client_id ?? c?.user_id),
+      name: pickName(c),
+      email: c?.email ?? c?.user?.email ?? null,
+    }))
+    .filter((x: any) => Number.isFinite(x.id) && x.id > 0);
+}
+
+export default function TherapistFeedbacksIndexScreen() {
+  console.log("✅ ABRIU: therapist/feedbacks/index");
+
   const r = useRouter();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState<ClientWithFeedback[]>([]);
 
-  function goBackSafe() {
+  const goBackSafe = useCallback(() => {
     if ((r as any).canGoBack?.()) (r as any).back();
     else r.replace("/(therapist)/(tabs)/therapist-home" as any);
-  }
+  }, [r]);
 
-  async function handleSendInvite() {
-    const cleanEmail = email.trim().toLowerCase();
-
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      Alert.alert("Email inválido", "Digite um e-mail válido.");
-      return;
-    }
-
+  const load = useCallback(async () => {
     try {
       setLoading(true);
 
-      await sendInvitation(cleanEmail);
-
-      Alert.alert(
-        "Convite enviado!",
-        "O cliente receberá um e-mail com o código para criar a conta."
-      );
-
-      setEmail("");
-      goBackSafe();
-    } catch (e: any) {
-      const msg = String(e?.message || "");
-
-      if (msg === "NO_TOKEN") {
+      const token = await getToken();
+      if (!token) {
         Alert.alert("Sessão expirada", "Faça login novamente.");
         r.replace("/(auth)/login" as any);
         return;
       }
 
-      Alert.alert("Erro", "Não foi possível enviar o convite.");
+      // 1) pega clientes (via /users/clients)
+      const baseClients = await fetchClients(token);
+
+      console.log("✅ baseClients:", baseClients.length, baseClients.slice(0, 3));
+
+      // 2) filtra só quem tem feedback e calcula a contagem
+      const results: ClientWithFeedback[] = [];
+
+      for (const c of baseClients) {
+        try {
+          console.log("➡️ contando feedbacks do cliente", c.id);
+
+          const arr = await listFeedbacksByClient(c.id);
+          const count = Array.isArray(arr) ? arr.length : 0;
+
+          if (count > 0) results.push({ ...c, feedbackCount: count });
+        } catch (e: any) {
+          // não quebra a tela por causa de 1 cliente
+          console.log("⚠️ erro contando feedbacks do cliente", c.id, e?.message);
+        }
+      }
+
+      // 3) ordena por quantidade (desc)
+      results.sort((a, b) => b.feedbackCount - a.feedbackCount);
+
+      setClients(results);
+    } catch (e: any) {
+      console.log("❌ feedbacks/index load:", e?.message);
+      setClients([]);
+      Alert.alert("Erro", "Não foi possível carregar os clientes com feedback.");
     } finally {
       setLoading(false);
     }
-  }
+  }, [r]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const subtitle = useMemo(() => {
+    if (loading) return "Carregando...";
+    return clients.length > 0 ? "Selecione um cliente" : "Nenhum feedback encontrado";
+  }, [loading, clients.length]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      edges={["top", "left", "right"]}
+    >
       {/* Header */}
       <View
         style={{
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: 24,
-          paddingTop: 10,
-          paddingBottom: 12,
+          gap: 12,
+          backgroundColor: theme.background,
         }}
       >
         <Pressable
           onPress={goBackSafe}
-          disabled={loading}
-          hitSlop={18}
+          hitSlop={16}
           style={{
-            paddingVertical: 8,
-            paddingHorizontal: 10,
-            borderRadius: 10,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderRadius: 12,
             borderWidth: 1,
             borderColor: theme.border,
             backgroundColor: theme.card,
-            marginRight: 12,
-            opacity: loading ? 0.7 : 1,
           }}
         >
-          <Text style={{ fontWeight: "900", color: theme.text }}>← Voltar</Text>
+          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
         </Pressable>
 
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: "900", color: theme.text }}>
-            Convidar Cliente
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
+            Feedbacks já dados
           </Text>
-          <Text style={{ color: theme.muted }}>
-            Envie um convite por e-mail
-          </Text>
+          <Text style={{ color: theme.muted, marginTop: 2 }}>{subtitle}</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-            borderRadius: 16,
-            padding: 16,
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontWeight: "800", color: theme.text }}>E-mail</Text>
+      {/* Conteúdo */}
+      <View style={{ flex: 1, padding: 16 }}>
+        {loading && clients.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator />
+            <Text style={{ marginTop: 10, color: theme.muted }}>Carregando...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={clients}
+            keyExtractor={(item) => String(item.id)}
+            refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+            contentContainerStyle={{ paddingBottom: 16 }}
+            renderItem={({ item }) => {
+              const title = item.name?.trim() || `Cliente #${item.id}`;
+              return (
+                <Pressable
+                  onPress={() => r.push(`/(therapist)/feedbacks/${item.id}` as any)}
+                  style={{
+                    padding: 14,
+                    borderWidth: 1,
+                    borderRadius: 14,
+                    marginBottom: 10,
+                    borderColor: theme.border,
+                    backgroundColor: theme.card,
+                  }}
+                >
+                  <Text style={{ color: theme.text, fontWeight: "900", fontSize: 15 }}>
+                    {title}
+                  </Text>
 
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="cliente@email.com"
-            placeholderTextColor={theme.muted}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.background,
-              color: theme.text,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              borderRadius: 12,
+                  {!!item.email && (
+                    <Text style={{ color: theme.muted, marginTop: 4 }}>{item.email}</Text>
+                  )}
+
+                  <Text style={{ color: theme.muted, marginTop: 8 }}>
+                    {item.feedbackCount} feedback(s)
+                  </Text>
+
+                  <Text style={{ color: theme.muted, marginTop: 8, fontWeight: "900" }}>
+                    Toque para ver a lista
+                  </Text>
+                </Pressable>
+              );
             }}
+            ListEmptyComponent={
+              !loading ? (
+                <View style={{ paddingTop: 18 }}>
+                  <Text style={{ color: theme.muted }}>
+                    Nenhum cliente com feedback encontrado.
+                  </Text>
+                </View>
+              ) : null
+            }
           />
-
-          <Pressable
-            onPress={handleSendInvite}
-            disabled={loading}
-            style={{
-              paddingVertical: 14,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator />
-            ) : (
-              <Text style={{ fontSize: 16, fontWeight: "900", color: theme.text }}>
-                Enviar Convite
-              </Text>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={goBackSafe}
-            disabled={loading}
-            style={{ paddingVertical: 12, borderRadius: 12, alignItems: "center", opacity: loading ? 0.7 : 1 }}
-          >
-            <Text style={{ fontWeight: "700", color: theme.muted }}>Cancelar</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
