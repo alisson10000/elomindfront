@@ -143,7 +143,7 @@ export default function TherapistClientsScreen() {
             Meus Clientes
           </Text>
           <Text style={{ color: theme.muted, marginTop: 2 }}>
-            Ative ou desative o acesso ao app
+            Ative/desative o acesso e gerencie a anamnese
           </Text>
         </View>
       </View>
@@ -204,24 +204,48 @@ export default function TherapistClientsScreen() {
                     <StatusPill active={isActive} />
                   </View>
 
-                  <Pressable
-                    onPress={() => toggleClient(item)}
-                    hitSlop={16}
-                    style={{
-                      marginTop: 12,
-                      paddingVertical: 12,
-                      borderRadius: 12,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: btnBorder,
-                      backgroundColor: btnBg,
-                      opacity: loading ? 0.7 : 1,
-                    }}
-                  >
-                    <Text style={{ color: btnTextColor, fontWeight: "900" }}>
-                      {btnLabel}
-                    </Text>
-                  </Pressable>
+                  {/* ✅ Ações */}
+                  <View style={{ marginTop: 12, gap: 10 }}>
+                    {/* ✅ NOVO: Anamnese (por cliente) */}
+                    <Pressable
+                      onPress={() =>
+                        r.push(`/(therapist)/anamnesis/${item.id}` as any)
+                      }
+                      hitSlop={16}
+                      style={{
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        backgroundColor: theme.card,
+                        opacity: loading ? 0.7 : 1,
+                      }}
+                    >
+                      <Text style={{ color: theme.text, fontWeight: "900" }}>
+                        Anamnese
+                      </Text>
+                    </Pressable>
+
+                    {/* Botão Ativar/Desativar */}
+                    <Pressable
+                      onPress={() => toggleClient(item)}
+                      hitSlop={16}
+                      style={{
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: btnBorder,
+                        backgroundColor: btnBg,
+                        opacity: loading ? 0.7 : 1,
+                      }}
+                    >
+                      <Text style={{ color: btnTextColor, fontWeight: "900" }}>
+                        {btnLabel}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               );
             }}
