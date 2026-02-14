@@ -36,6 +36,7 @@ export default function ReflectionDetail() {
 
   const reflectionData = useMemo(() => {
     const p: any = params;
+
     const pick = (key: string) => {
       const v = p?.[key];
       return v ? String(Array.isArray(v) ? v[0] : v) : "";
@@ -101,6 +102,28 @@ export default function ReflectionDetail() {
     );
   }
 
+  function goToEdit() {
+    if (!reflectionId) return;
+
+    // ✅ REGRA: não permitir editar após feedback aprovado
+    if (!canDelete) {
+      Alert.alert("Edição bloqueada", "Não é possível editar após feedback aprovado.");
+      return;
+    }
+
+    r.push({
+      pathname: "/(client)/reflections/edit/[id]" as any,
+      params: {
+        id: String(reflectionId),
+        can_edit: String(canDelete), // ✅ proteção extra para a tela de edição
+        feeling_after_session: reflectionData.feeling_after_session ?? "",
+        what_learned: reflectionData.what_learned ?? "",
+        positive_point: reflectionData.positive_point ?? "",
+        resistance_or_disagreement: reflectionData.resistance_or_disagreement ?? "",
+      },
+    } as any);
+  }
+
   useEffect(() => {
     if (!reflectionId) return;
     loadFeedback();
@@ -129,9 +152,19 @@ export default function ReflectionDetail() {
   // ID inválido
   if (!reflectionId) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        edges={["top", "left", "right"]}
+      >
         <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900", marginBottom: 12 }}>
+          <Text
+            style={{
+              color: theme.text,
+              fontSize: 16,
+              fontWeight: "900",
+              marginBottom: 12,
+            }}
+          >
             Não consegui abrir essa reflexão (ID inválido).
           </Text>
 
@@ -156,8 +189,11 @@ export default function ReflectionDetail() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
-      {/* Header (mesmo estilo do ClientHome) */}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      edges={["top", "left", "right"]}
+    >
+      {/* Header */}
       <View
         style={{
           paddingHorizontal: 16,
@@ -197,13 +233,14 @@ export default function ReflectionDetail() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {/* Dados da reflexão */}
+        {/* Data */}
         {!!reflectionData.created_at && (
           <Text style={{ color: theme.muted, marginBottom: 12 }}>
             {new Date(reflectionData.created_at).toLocaleString()}
           </Text>
         )}
 
+        {/* Dados da reflexão */}
         <View style={{ gap: 12 }}>
           <Card title="Como você se sentiu após a sessão?">
             <Text style={{ color: theme.text, lineHeight: 20 }}>
@@ -290,6 +327,30 @@ export default function ReflectionDetail() {
               Atualizar feedback
             </Text>
           </Pressable>
+
+          {/* ✅ Editar reflexão (somente se permitido) */}
+          {canDelete ? (
+            <Pressable
+              onPress={goToEdit}
+              hitSlop={16}
+              style={{
+                padding: 16,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                backgroundColor: theme.card,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: theme.text, fontWeight: "900" }}>
+                Editar reflexão
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={{ color: theme.muted, textAlign: "center" }}>
+              Não é possível editar (feedback aprovado).
+            </Text>
+          )}
 
           {canDelete ? (
             <Pressable

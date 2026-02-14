@@ -8,7 +8,7 @@ import { clearSessionOnly } from "./remember";
 /**
  * Fallbacks DEV (se .env estiver vazio)
  */
-const DEV_PC_IP = "192.168.1.182";
+const DEV_PC_IP = "192.168.0.100";
 const DEV_DEVICE_URL = `http://${DEV_PC_IP}:8000`;
 const DEV_ANDROID_EMULATOR_URL = "http://10.0.2.2:8000";
 
