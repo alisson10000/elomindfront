@@ -223,3 +223,24 @@ export async function getFeedbackByReflection(reflectionId: number): Promise<Fee
     }
   }
 }
+/**
+ * =========================
+ * CLIENT - UPDATE (PATCH)
+ * =========================
+ */
+
+export type UpdateReflectionPayload = {
+  feeling_after_session: string;
+  what_learned: string;
+  positive_point: string;
+  resistance_or_disagreement?: string;
+};
+
+export async function updateReflection(
+  id: number,
+  payload: UpdateReflectionPayload
+) {
+  const res = await api.patch(`/reflections/${id}`, payload);
+  log("✅ updateReflection:", { id, ok: !!res.data });
+  return res.data;
+}
