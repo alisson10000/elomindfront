@@ -206,6 +206,25 @@ export default function TherapistClientsScreen() {
 
                   {/* ✅ Ações */}
                   <View style={{ marginTop: 12, gap: 10 }}>
+                    {/* ✅ NOVO: Sonhos (por cliente) */}
+<Pressable
+  onPress={() => r.push(`/(therapist)/dreams?client_id=${item.id}` as any)}
+  hitSlop={16}
+  style={{
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.card,
+    opacity: loading ? 0.7 : 1,
+  }}
+>
+  <Text style={{ color: theme.text, fontWeight: "900" }}>
+    Sonhos
+  </Text>
+</Pressable>
+
                     {/* ✅ NOVO: Anamnese (por cliente) */}
                     <Pressable
                       onPress={() =>
