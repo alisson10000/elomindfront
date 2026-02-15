@@ -27,6 +27,7 @@ export default function ClientHome() {
         Bem-vindo ao EloMind
       </Text>
 
+      {/* Reflexões */}
       <Pressable
         onPress={() => router.push("/(client)/reflections")}
         style={{
@@ -53,10 +54,28 @@ export default function ClientHome() {
           borderColor: theme.primary,
           backgroundColor: theme.primary,
           alignItems: "center",
+          marginBottom: 12,
         }}
       >
         <Text style={{ fontSize: 16, fontWeight: "700", color: "#FFFFFF" }}>
           Nova Reflexão
+        </Text>
+      </Pressable>
+
+      {/* Sonhos */}
+      <Pressable
+        onPress={() => router.push("/(client)/dreams/new")}
+        style={{
+          padding: 16,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: theme.primary,
+          backgroundColor: theme.primary,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: "700", color: "#FFFFFF" }}>
+          Novo Sonho
         </Text>
       </Pressable>
 
@@ -67,7 +86,7 @@ export default function ClientHome() {
           textAlign: "center",
         }}
       >
-        Registre suas reflexões e acompanhe o feedback do terapeuta.
+        Registre suas reflexões e sonhos para seu terapeuta acompanhar.
       </Text>
     </View>
   );
