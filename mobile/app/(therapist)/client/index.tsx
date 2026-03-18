@@ -245,6 +245,32 @@ export default function TherapistClientsScreen() {
                         Anamnese
                       </Text>
                     </Pressable>
+                    <Pressable
+  onPress={() =>
+    r.push({
+      pathname: "/(therapist)/lgpd/delete-client" as any,
+      params: {
+        client_id: String(item.id),
+        client_name: item.name,
+      },
+    } as any)
+  }
+  hitSlop={16}
+  style={{
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.danger,
+    backgroundColor: theme.card,
+    opacity: loading ? 0.7 : 1,
+  }}
+>
+  <Text style={{ color: theme.danger, fontWeight: "900" }}>
+    LGPD — Excluir dados
+  </Text>
+</Pressable>
+
 
                     {/* Botão Ativar/Desativar */}
                     <Pressable

@@ -82,7 +82,7 @@ export default function DreamCreatedScreen() {
             marginBottom: 10,
           }}
         >
-          Sonho registrado ✅
+          Sonho registrado 
         </Text>
 
         <Text style={{ color: theme.muted, fontSize: 15, marginBottom: 18 }}>
