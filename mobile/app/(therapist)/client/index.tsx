@@ -11,9 +11,9 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { listClients, setClientActive } from "../../../lib/users";
+import { createStyles } from "@/styles/therapist/client/clients.styles";
 
 type Client = {
   id: number;
@@ -26,7 +26,7 @@ type Client = {
 export default function TherapistClientsScreen() {
   const r = useRouter();
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
+  const styles = createStyles((colorScheme ?? "light") as "light" | "dark");
 
   const [items, setItems] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,28 +77,9 @@ export default function TherapistClientsScreen() {
   }
 
   function StatusPill({ active }: { active: boolean }) {
-    const bg = active ? theme.primary : theme.danger;
-    const textColor = "#0B1220"; // bom contraste com o verde do EloMind
-    const textColorDanger = "#FFFFFF";
-
     return (
-      <View
-        style={{
-          paddingVertical: 6,
-          paddingHorizontal: 10,
-          borderRadius: 999,
-          borderWidth: 1,
-          borderColor: active ? theme.primary : theme.danger,
-          backgroundColor: bg,
-        }}
-      >
-        <Text
-          style={{
-            color: active ? textColor : textColorDanger,
-            fontWeight: "900",
-            fontSize: 12,
-          }}
-        >
+      <View style={active ? styles.statusPillActive : styles.statusPillInactive}>
+        <Text style={active ? styles.statusTextActive : styles.statusTextInactive}>
           {active ? "Ativo" : "Inativo"}
         </Text>
       </View>
@@ -106,124 +87,62 @@ export default function TherapistClientsScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      edges={["top", "left", "right"]}
-    >
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       {/* Header (agora respeita status bar) */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          backgroundColor: theme.background,
-        }}
-      >
-        <Pressable
-          onPress={goBackSafe}
-          hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
-        >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+      <View style={styles.header}>
+        <Pressable onPress={goBackSafe} hitSlop={16} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Voltar</Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            Meus Clientes
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Meus Clientes</Text>
+          <Text style={styles.headerSubtitle}>
             Ative/desative o acesso e gerencie a anamnese
           </Text>
         </View>
       </View>
 
       {/* Conteúdo */}
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={styles.content}>
         {loading && items.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator />
-            <Text style={{ marginTop: 10, color: theme.muted }}>
-              Carregando clientes...
-            </Text>
+            <Text style={styles.loadingText}>Carregando clientes...</Text>
           </View>
         ) : (
           <FlatList
             data={items}
             keyExtractor={(item) => String(item.id)}
             refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => {
               const isActive = item.is_active;
-
-              // Botão: se está ativo -> mostra "Desativar" em vermelho
-              // se está inativo -> mostra "Ativar" em verde
-              const btnBg = isActive ? theme.danger : theme.primary;
-              const btnBorder = isActive ? theme.danger : theme.primary;
-              const btnTextColor = isActive ? "#FFFFFF" : "#0B1220";
               const btnLabel = isActive ? "Desativar" : "Ativar";
 
               return (
-                <View
-                  style={{
-                    padding: 14,
-                    borderWidth: 1,
-                    borderRadius: 14,
-                    marginBottom: 10,
-                    borderColor: theme.border,
-                    backgroundColor: theme.card,
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 10,
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: "900", color: theme.text, fontSize: 16 }}>
-                        {item.name}
-                      </Text>
-                      <Text style={{ color: theme.muted, marginTop: 4 }}>
-                        {item.email}
-                      </Text>
+                <View style={styles.card}>
+                  <View style={styles.cardTopRow}>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.clientName}>{item.name}</Text>
+                      <Text style={styles.clientEmail}>{item.email}</Text>
                     </View>
 
                     <StatusPill active={isActive} />
                   </View>
 
                   {/* ✅ Ações */}
-                  <View style={{ marginTop: 12, gap: 10 }}>
+                  <View style={styles.actions}>
                     {/* ✅ NOVO: Sonhos (por cliente) */}
-<Pressable
-  onPress={() => r.push(`/(therapist)/dreams?client_id=${item.id}` as any)}
-  hitSlop={16}
-  style={{
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    opacity: loading ? 0.7 : 1,
-  }}
->
-  <Text style={{ color: theme.text, fontWeight: "900" }}>
-    Sonhos
-  </Text>
-</Pressable>
+                    <Pressable
+                      onPress={() => r.push(`/(therapist)/dreams?client_id=${item.id}` as any)}
+                      hitSlop={16}
+                      style={[
+                        styles.defaultActionButton,
+                        loading && styles.defaultActionButtonDisabled,
+                      ]}
+                    >
+                      <Text style={styles.defaultActionButtonText}>Sonhos</Text>
+                    </Pressable>
 
                     {/* ✅ NOVO: Anamnese (por cliente) */}
                     <Pressable
@@ -231,62 +150,51 @@ export default function TherapistClientsScreen() {
                         r.push(`/(therapist)/anamnesis/${item.id}` as any)
                       }
                       hitSlop={16}
-                      style={{
-                        paddingVertical: 12,
-                        borderRadius: 12,
-                        alignItems: "center",
-                        borderWidth: 1,
-                        borderColor: theme.border,
-                        backgroundColor: theme.card,
-                        opacity: loading ? 0.7 : 1,
-                      }}
+                      style={[
+                        styles.defaultActionButton,
+                        loading && styles.defaultActionButtonDisabled,
+                      ]}
                     >
-                      <Text style={{ color: theme.text, fontWeight: "900" }}>
-                        Anamnese
+                      <Text style={styles.defaultActionButtonText}>Anamnese</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() =>
+                        r.push({
+                          pathname: "/(therapist)/lgpd/delete-client" as any,
+                          params: {
+                            client_id: String(item.id),
+                            client_name: item.name,
+                          },
+                        } as any)
+                      }
+                      hitSlop={16}
+                      style={[
+                        styles.lgpdButton,
+                        loading && styles.defaultActionButtonDisabled,
+                      ]}
+                    >
+                      <Text style={styles.lgpdButtonText}>
+                        LGPD — Excluir dados
                       </Text>
                     </Pressable>
-                    <Pressable
-  onPress={() =>
-    r.push({
-      pathname: "/(therapist)/lgpd/delete-client" as any,
-      params: {
-        client_id: String(item.id),
-        client_name: item.name,
-      },
-    } as any)
-  }
-  hitSlop={16}
-  style={{
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.danger,
-    backgroundColor: theme.card,
-    opacity: loading ? 0.7 : 1,
-  }}
->
-  <Text style={{ color: theme.danger, fontWeight: "900" }}>
-    LGPD — Excluir dados
-  </Text>
-</Pressable>
-
 
                     {/* Botão Ativar/Desativar */}
                     <Pressable
                       onPress={() => toggleClient(item)}
                       hitSlop={16}
-                      style={{
-                        paddingVertical: 12,
-                        borderRadius: 12,
-                        alignItems: "center",
-                        borderWidth: 1,
-                        borderColor: btnBorder,
-                        backgroundColor: btnBg,
-                        opacity: loading ? 0.7 : 1,
-                      }}
+                      style={[
+                        isActive ? styles.toggleButtonActive : styles.toggleButtonInactive,
+                        loading && styles.defaultActionButtonDisabled,
+                      ]}
                     >
-                      <Text style={{ color: btnTextColor, fontWeight: "900" }}>
+                      <Text
+                        style={
+                          isActive
+                            ? styles.toggleButtonTextActive
+                            : styles.toggleButtonTextInactive
+                        }
+                      >
                         {btnLabel}
                       </Text>
                     </Pressable>
@@ -296,10 +204,8 @@ export default function TherapistClientsScreen() {
             }}
             ListEmptyComponent={
               !loading ? (
-                <View style={{ paddingTop: 18 }}>
-                  <Text style={{ color: theme.muted }}>
-                    Nenhum cliente encontrado.
-                  </Text>
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Nenhum cliente encontrado.</Text>
                 </View>
               ) : null
             }

@@ -1,17 +1,24 @@
-// app/(therapist)/lgpd/delete-client.tsx
 import { useMemo, useState } from "react";
 import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  createStyles,
+  getDeleteClientTheme,
+} from "@/styles/therapist/lgpd/delete-client.styles";
 import { adminExecuteDeletion } from "@/lib/adminDeletion";
+
+type Scheme = "light" | "dark";
 
 export default function DeleteClientLGPD() {
   const r = useRouter();
   const params = useLocalSearchParams();
-  const theme = Colors[useColorScheme() ?? "light"];
+
+  const colorScheme = (useColorScheme() ?? "light") as Scheme;
+  const styles = createStyles(colorScheme);
+  const ui = getDeleteClientTheme(colorScheme);
 
   const clientId = useMemo(() => {
     const raw = (params as any)?.client_id;
@@ -59,11 +66,12 @@ export default function DeleteClientLGPD() {
 
   if (!clientId) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ color: theme.text, fontWeight: "900" }}>client_id inválido</Text>
-          <Pressable onPress={goBackSafe} style={{ marginTop: 14, padding: 14 }}>
-            <Text style={{ color: theme.text }}>Voltar</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidTitle}>client_id inválido</Text>
+
+          <Pressable onPress={goBackSafe} style={styles.invalidBackButton}>
+            <Text style={styles.invalidBackButtonText}>Voltar</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -71,39 +79,25 @@ export default function DeleteClientLGPD() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
-      <View style={{
-        paddingHorizontal: 16, paddingBottom: 12,
-        borderBottomWidth: 1, borderBottomColor: theme.border,
-        backgroundColor: theme.background,
-        flexDirection: "row", alignItems: "center", gap: 12,
-      }}>
-        <Pressable onPress={goBackSafe} hitSlop={16} style={{
-          paddingVertical: 10, paddingHorizontal: 12,
-          borderRadius: 12, borderWidth: 1,
-          borderColor: theme.border, backgroundColor: theme.card,
-        }}>
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <View style={styles.header}>
+        <Pressable onPress={goBackSafe} hitSlop={16} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Voltar</Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            LGPD — Excluir dados
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
-            Cliente #{clientId}{clientName ? ` • ${clientName}` : ""}
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>LGPD — Excluir dados</Text>
+          <Text style={styles.headerSubtitle}>
+            Cliente #{clientId}
+            {clientName ? ` • ${clientName}` : ""}
           </Text>
         </View>
       </View>
 
-      <View style={{ flex: 1, padding: 16, gap: 12 }}>
-        <View style={{
-          padding: 16, borderRadius: 12,
-          borderWidth: 1, borderColor: theme.border,
-          backgroundColor: theme.card,
-        }}>
-          <Text style={{ color: theme.text, fontWeight: "900" }}>Atenção</Text>
-          <Text style={{ color: theme.muted, marginTop: 8, lineHeight: 18 }}>
+      <View style={styles.content}>
+        <View style={styles.warningCard}>
+          <Text style={styles.warningTitle}>Atenção</Text>
+          <Text style={styles.warningText}>
             Esta ação executa a exclusão total (reflexões, feedbacks, sonhos, anamnese,
             consents, vínculo terapeuta-cliente e usuário).
           </Text>
@@ -112,20 +106,15 @@ export default function DeleteClientLGPD() {
         <Pressable
           onPress={confirm}
           disabled={loading}
-          style={{
-            padding: 16,
-            borderRadius: 12,
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: theme.danger,
-            backgroundColor: theme.danger,
-            opacity: loading ? 0.7 : 1,
-          }}
+          style={[
+            styles.deleteButton,
+            loading && styles.deleteButtonDisabled,
+          ]}
         >
           {loading ? (
-            <ActivityIndicator />
+            <ActivityIndicator color={ui.activityIndicatorColor} />
           ) : (
-            <Text style={{ color: "#FFF", fontWeight: "900" }}>
+            <Text style={styles.deleteButtonText}>
               Executar exclusão agora
             </Text>
           )}

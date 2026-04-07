@@ -15,10 +15,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { api } from "@/lib/api";
+import { makeStyles } from "@/styles/auth/invite-code.styles";
 
 export default function InviteCodeScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = makeStyles(theme);
 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,6 @@ export default function InviteCodeScreen() {
     try {
       setLoading(true);
 
-      // ✅ IMPORTANTE: seu backend espera query param "token" (não "code")
       const res = await api.get("/invitations/validate", {
         params: { token: cleanCode },
       });
@@ -48,8 +49,6 @@ export default function InviteCodeScreen() {
 
       router.push({
         pathname: "/(auth)/invite-signup",
-        // No app mantemos o nome "code" porque faz sentido pro usuário,
-        // mas no backend isso é o "token" do convite
         params: { code: cleanCode, email },
       } as any);
     } catch (err: any) {
@@ -65,114 +64,69 @@ export default function InviteCodeScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.keyboard}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={{ flex: 1, padding: 24 }}>
-          {/* Header */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 14,
-            }}
-          >
+        <View style={styles.container}>
+          <View style={styles.header}>
             <Pressable
               onPress={goBackSafe}
               disabled={loading}
-              style={{
-                paddingVertical: 8,
-                paddingHorizontal: 10,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.card,
-                marginRight: 12,
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={[
+                styles.backButton,
+                loading && styles.backButtonDisabled,
+              ]}
             >
-              <Text style={{ fontWeight: "900", color: theme.text }}>
-                ← voltar
-              </Text>
+              <Text style={styles.backButtonText}>← voltar</Text>
             </Pressable>
 
-            <Text style={{ fontSize: 18, fontWeight: "900", color: theme.text }}>
-              Código do convite
-            </Text>
+            <Text style={styles.title}>Código do convite</Text>
           </View>
 
-          <Text style={{ color: theme.muted, marginBottom: 18 }}>
+          <Text style={styles.subtitle}>
             Digite o código que você recebeu no e-mail para continuar o cadastro.
           </Text>
 
-          {/* Card */}
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              padding: 16,
-              gap: 12,
-            }}
-          >
-            <Text style={{ fontWeight: "800", color: theme.text }}>Código</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Código</Text>
 
             <TextInput
               value={code}
               onChangeText={setCode}
               placeholder="Ex: ABCD-1234"
-              placeholderTextColor={theme.muted}
+              placeholderTextColor={theme.placeholder}
               autoCapitalize="characters"
               editable={!loading}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-                color: theme.text,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                borderRadius: 12,
-              }}
+              style={styles.input}
             />
 
             <Pressable
               onPress={handleValidate}
               disabled={loading}
-              style={{
-                paddingVertical: 14,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.card,
-                alignItems: "center",
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+                loading && styles.primaryButtonDisabled,
+              ]}
             >
               {loading ? (
-                <ActivityIndicator />
+                <ActivityIndicator color={theme.primaryText} />
               ) : (
-                <Text style={{ fontSize: 16, fontWeight: "900", color: theme.text }}>
-                  Validar código
-                </Text>
+                <Text style={styles.primaryButtonText}>Validar código</Text>
               )}
             </Pressable>
 
             <Pressable
               onPress={goBackSafe}
               disabled={loading}
-              style={{
-                paddingVertical: 12,
-                borderRadius: 12,
-                alignItems: "center",
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={[
+                styles.secondaryButton,
+                loading && styles.primaryButtonDisabled,
+              ]}
             >
-              <Text style={{ fontWeight: "700", color: theme.muted }}>
-                Cancelar
-              </Text>
+              <Text style={styles.secondaryButtonText}>Cancelar</Text>
             </Pressable>
           </View>
         </View>

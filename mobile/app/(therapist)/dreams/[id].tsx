@@ -1,4 +1,3 @@
-// app/(therapist)/dreams/[id].tsx
 import { useMemo, useState } from "react";
 import {
   View,
@@ -14,14 +13,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { updateDreamAsTherapist } from "@/lib/dreams";
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { createStyles } from "@/styles/therapist/dreams/detail.styles";
 
 export default function DreamDetail() {
   const r = useRouter();
   const params = useLocalSearchParams();
 
-  const theme = Colors[useColorScheme() ?? "light"];
+  const colorScheme = useColorScheme();
+  const styles = createStyles((colorScheme ?? "light") as "light" | "dark");
 
   const dreamId = useMemo(() => {
     const raw = (params as any)?.id;
@@ -45,11 +45,18 @@ export default function DreamDetail() {
   const [saving, setSaving] = useState(false);
 
   function goBackToList() {
-    // ✅ volta forçando reload da lista (pra refletir tags/notas salvas)
-    if (clientId) r.replace(`/(therapist)/dreams?client_id=${clientId}` as any);
-    else if ((r as any).canGoBack?.()) (r as any).back();
-    else r.replace("/(therapist)/client" as any);
+  if ((r as any).canGoBack?.()) {
+    (r as any).back();
+    return;
   }
+
+  if (clientId) {
+    r.replace(`/(therapist)/dreams?client_id=${clientId}` as any);
+    return;
+  }
+
+  r.replace("/(therapist)/client" as any);
+}
 
   async function save() {
     if (!dreamId || saving) return;
@@ -72,36 +79,15 @@ export default function DreamDetail() {
     }
   }
 
-  const inputStyle = {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 14,
-    color: theme.text,
-    backgroundColor: theme.input,
-  } as const;
-
   if (!dreamId) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ color: theme.text, fontWeight: "900", marginBottom: 12 }}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidTitle}>
             Não consegui abrir esse sonho (ID inválido).
           </Text>
-          <Pressable
-            onPress={goBackToList}
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: theme.text, fontWeight: "800" }}>Voltar</Text>
+          <Pressable onPress={goBackToList} style={styles.invalidButton}>
+            <Text style={styles.invalidButtonText}>Voltar</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -110,110 +96,69 @@ export default function DreamDetail() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={styles.keyboardAvoiding}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: theme.background }}
+        style={styles.safeArea}
         edges={["top", "left", "right"]}
       >
-        {/* Header com Voltar */}
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingBottom: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.border,
-            backgroundColor: theme.background,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
+        <View style={styles.header}>
           <Pressable
             onPress={goBackToList}
             hitSlop={16}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-            }}
+            style={styles.backButton}
           >
-            <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+            <Text style={styles.backButtonText}>← Voltar</Text>
           </Pressable>
 
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-              Sonho #{dreamId}
-            </Text>
-            <Text style={{ color: theme.muted, marginTop: 2 }}>
-              Tags e notas do terapeuta
-            </Text>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Sonho #{dreamId}</Text>
+            <Text style={styles.headerSubtitle}>Tags e notas do terapeuta</Text>
           </View>
         </View>
 
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
+          contentContainerStyle={styles.scrollContent}
         >
           {!!createdAt && (
-            <Text style={{ color: theme.muted, marginBottom: 12 }}>
+            <Text style={styles.createdAt}>
               {new Date(createdAt).toLocaleString()}
             </Text>
           )}
 
-          <Text style={{ color: theme.text, fontWeight: "900" }}>Descrição do cliente</Text>
-          <View
-            style={{
-              padding: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              marginTop: 8,
-              marginBottom: 16,
-              backgroundColor: theme.card,
-            }}
-          >
-            <Text style={{ color: theme.text, lineHeight: 20 }}>
-              {description || "-"}
-            </Text>
+          <Text style={styles.sectionTitleStrong}>Descrição do cliente</Text>
+          <View style={styles.descriptionBox}>
+            <Text style={styles.descriptionText}>{description || "-"}</Text>
           </View>
 
-          <Text style={{ color: theme.text, fontWeight: "700" }}>Tags</Text>
+          <Text style={styles.sectionTitle}>Tags</Text>
           <TextInput
             value={tags}
             onChangeText={setTags}
-            style={inputStyle}
+            style={styles.input}
             placeholder="Ex: ansiedade, infância, água..."
-            placeholderTextColor={theme.icon}
+            placeholderTextColor="#98A2B3"
           />
 
-          <Text style={{ color: theme.text, fontWeight: "700" }}>Notas</Text>
+          <Text style={styles.sectionTitle}>Notas</Text>
           <TextInput
             value={notes}
             onChangeText={setNotes}
             multiline
             textAlignVertical="top"
-            style={[inputStyle, { minHeight: 120 }]}
+            style={[styles.input, styles.notesInput]}
             placeholder="Escreva suas observações..."
-            placeholderTextColor={theme.icon}
+            placeholderTextColor="#98A2B3"
           />
 
           <Pressable
             onPress={save}
             disabled={saving}
-            style={{
-              backgroundColor: theme.primary,
-              padding: 16,
-              borderRadius: 12,
-              alignItems: "center",
-              opacity: saving ? 0.7 : 1,
-            }}
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           >
-            <Text style={{ color: "#FFF", fontWeight: "900" }}>
+            <Text style={styles.saveButtonText}>
               {saving ? "Salvando..." : "Salvar"}
             </Text>
           </Pressable>

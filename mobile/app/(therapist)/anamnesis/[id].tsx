@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { createStyles } from "@/styles/therapist/anamnesis/id.styles";
 
 import {
   getAnamnesisByClient,
@@ -40,26 +41,26 @@ function formatDate(iso?: string | null) {
 // ======================
 function Card({
   theme,
+  styles,
   title,
   children,
 }: {
-  theme: any;
+  theme: (typeof Colors)["light"];
+  styles: ReturnType<typeof createStyles>;
   title: string;
   children: React.ReactNode;
 }) {
   return (
     <View
-      style={{
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: theme.border,
-        backgroundColor: theme.card,
-      }}
+      style={[
+        styles.card,
+        {
+          borderColor: theme.border,
+          backgroundColor: theme.card,
+        },
+      ]}
     >
-      <Text style={{ color: theme.text, fontWeight: "900", marginBottom: 8 }}>
-        {title}
-      </Text>
+      <Text style={[styles.cardTitle, { color: theme.text }]}>{title}</Text>
       {children}
     </View>
   );
@@ -74,6 +75,7 @@ export default function TherapistAnamnesisScreen() {
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = createStyles(theme);
 
   const clientId = useMemo(() => {
     const raw = (params as any)?.id;
@@ -175,35 +177,19 @@ export default function TherapistAnamnesisScreen() {
   if (!clientId) {
     return (
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: theme.background }}
+        style={styles.safeArea}
         edges={["top", "left", "right"]}
       >
-        <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontSize: 16,
-              fontWeight: "900",
-              marginBottom: 12,
-            }}
-          >
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidTitle}>
             Não consegui abrir a anamnese (ID inválido).
           </Text>
 
           <Pressable
             onPress={() => r.replace("/(therapist)/client" as any)}
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-            }}
+            style={styles.invalidButton}
           >
-            <Text style={{ color: theme.text, fontWeight: "800" }}>
-              Voltar
-            </Text>
+            <Text style={styles.invalidButtonText}>Voltar</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -212,64 +198,66 @@ export default function TherapistAnamnesisScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={styles.safeArea}
       edges={["top", "left", "right"]}
     >
       {/* Header */}
       <View
-        style={{
-          paddingHorizontal: 16,
-          paddingTop: 8,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          backgroundColor: theme.background,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-        }}
+        style={[
+          styles.header,
+          {
+            borderBottomColor: theme.border,
+            backgroundColor: theme.background,
+          },
+        ]}
       >
         <Pressable
           onPress={goBackSafe}
           hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
+          style={[
+            styles.headerBackButton,
+            {
+              borderColor: theme.border,
+              backgroundColor: theme.card,
+            },
+          ]}
         >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+          <Text
+            style={[
+              styles.headerBackButtonText,
+              { color: theme.text },
+            ]}
+          >
+            ← Voltar
+          </Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
+        <View style={styles.headerContent}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
             Anamnese do Cliente #{clientId}
           </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
+          <Text style={[styles.headerSubtitle, { color: theme.muted }]}>
             Contexto clínico (usado pela IA no feedback)
           </Text>
         </View>
       </View>
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.keyboardAvoiding}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           {loading ? (
-            <View style={{ paddingTop: 10, alignItems: "center" }}>
+            <View style={styles.loadingContainer}>
               <ActivityIndicator />
-              <Text style={{ marginTop: 10, color: theme.muted }}>
+              <Text style={[styles.loadingText, { color: theme.muted }]}>
                 Carregando anamnese...
               </Text>
             </View>
           ) : (
-            <View style={{ gap: 12 }}>
-              <Card theme={theme} title="Resumo (summary)">
-                <Text style={{ color: theme.muted, marginBottom: 10 }}>
+            <View style={styles.contentContainer}>
+              <Card theme={theme} styles={styles} title="Resumo (summary)">
+                <Text style={[styles.helperText, { color: theme.muted }]}>
                   Escreva um resumo objetivo. Isso será usado como contexto ao
                   gerar feedback das reflexões.
                 </Text>
@@ -281,37 +269,56 @@ export default function TherapistAnamnesisScreen() {
                   placeholderTextColor={theme.icon}
                   multiline
                   textAlignVertical="top"
-                  style={{
-                    minHeight: 180,
-                    borderWidth: 1,
-                    borderRadius: 12,
-                    padding: 12,
-                    borderColor: theme.border,
-                    backgroundColor: theme.input,
-                    color: theme.text,
-                    lineHeight: 20,
-                  }}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: theme.border,
+                      backgroundColor: theme.input,
+                      color: theme.text,
+                    },
+                  ]}
                 />
               </Card>
 
-              <Card theme={theme} title="Metadados">
-                <Text style={{ color: theme.muted }}>
+              <Card theme={theme} styles={styles} title="Metadados">
+                <Text
+                  style={[
+                    styles.metadataLine,
+                    styles.metadataLineFirst,
+                    { color: theme.muted },
+                  ]}
+                >
                   Situação:{" "}
-                  <Text style={{ color: theme.text, fontWeight: "800" }}>
+                  <Text
+                    style={[
+                      styles.metadataStrong,
+                      { color: theme.text },
+                    ]}
+                  >
                     {exists ? "Existe (PATCH)" : "Ainda não criada (POST)"}
                   </Text>
                 </Text>
 
-                <Text style={{ color: theme.muted, marginTop: 6 }}>
+                <Text style={[styles.metadataLine, { color: theme.muted }]}>
                   Criada em:{" "}
-                  <Text style={{ color: theme.text, fontWeight: "800" }}>
+                  <Text
+                    style={[
+                      styles.metadataStrong,
+                      { color: theme.text },
+                    ]}
+                  >
                     {formatDate(anam?.created_at ?? null)}
                   </Text>
                 </Text>
 
-                <Text style={{ color: theme.muted, marginTop: 6 }}>
+                <Text style={[styles.metadataLine, { color: theme.muted }]}>
                   Atualizada em:{" "}
-                  <Text style={{ color: theme.text, fontWeight: "800" }}>
+                  <Text
+                    style={[
+                      styles.metadataStrong,
+                      { color: theme.text },
+                    ]}
+                  >
                     {formatDate(anam?.updated_at ?? null)}
                   </Text>
                 </Text>
@@ -322,15 +329,18 @@ export default function TherapistAnamnesisScreen() {
                 onPress={onSave}
                 disabled={saving}
                 hitSlop={16}
-                style={{
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  backgroundColor: theme.primary,
-                  opacity: saving ? 0.7 : 1,
-                }}
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: theme.primary },
+                  saving && styles.primaryButtonDisabled,
+                ]}
               >
-                <Text style={{ color: "#FFFFFF", fontWeight: "900", fontSize: 16 }}>
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { color: theme.primaryText },
+                  ]}
+                >
                   {saving ? "Salvando..." : "Salvar"}
                 </Text>
               </Pressable>
@@ -339,17 +349,21 @@ export default function TherapistAnamnesisScreen() {
                 onPress={load}
                 disabled={loading || saving}
                 hitSlop={16}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.card,
-                  alignItems: "center",
-                  opacity: loading || saving ? 0.6 : 1,
-                }}
+                style={[
+                  styles.secondaryButton,
+                  {
+                    borderColor: theme.border,
+                    backgroundColor: theme.card,
+                  },
+                  (loading || saving) && styles.secondaryButtonDisabled,
+                ]}
               >
-                <Text style={{ color: theme.text, fontWeight: "800" }}>
+                <Text
+                  style={[
+                    styles.secondaryButtonText,
+                    { color: theme.text },
+                  ]}
+                >
                   Atualizar
                 </Text>
               </Pressable>

@@ -1,4 +1,3 @@
-// app/(therapist)/invite-client/index.tsx
 import { useState } from "react";
 import {
   View,
@@ -13,14 +12,20 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  createStyles,
+  getInviteClientTheme,
+} from "@/styles/therapist/invite-client/index.styles";
 import { api } from "@/lib/api";
-import { getToken } from "@/lib/token"; // ✅ usa a chave @elomind_token
+import { getToken } from "@/lib/token";
+
+type Scheme = "light" | "dark";
 
 export default function InviteClientScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
+  const colorScheme = (useColorScheme() ?? "light") as Scheme;
+  const styles = createStyles(colorScheme);
+  const ui = getInviteClientTheme(colorScheme);
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,7 +46,6 @@ export default function InviteClientScreen() {
     try {
       setLoading(true);
 
-      // ✅ pega token do lugar certo
       const token = await getToken();
       if (!token) {
         Alert.alert("Sessão expirada", "Faça login novamente.");
@@ -84,129 +88,65 @@ export default function InviteClientScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={styles.keyboardAvoiding}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        contentContainerStyle={{ padding: 24, flexGrow: 1 }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 4,
-            marginTop: 10,
-          }}
-        >
+        <View style={styles.header}>
           <Pressable
             onPress={goBackSafe}
             disabled={loading}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 10,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              marginRight: 12,
-              marginTop: 4,
-              opacity: loading ? 0.7 : 1,
-            }}
+            style={[styles.backButton, loading && styles.disabled]}
           >
-            <Text style={{ fontWeight: "900", color: theme.text }}>
-              ← voltar
-            </Text>
+            <Text style={styles.backButtonText}>← voltar</Text>
           </Pressable>
 
-          <Text style={{ fontSize: 18, fontWeight: "900", color: theme.text }}>
-            Convidar Cliente
-          </Text>
+          <Text style={styles.headerTitle}>Convidar Cliente</Text>
         </View>
 
-        {/* Descrição */}
-        <Text style={{ color: theme.muted, marginBottom: 18 }}>
+        <Text style={styles.description}>
           Digite o e-mail do cliente. Ele receberá um código para criar a conta.
         </Text>
 
-        {/* Card */}
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-            borderRadius: 16,
-            padding: 16,
-            gap: 12,
-          }}
-        >
-          <Text style={{ fontWeight: "800", color: theme.text }}>E-mail</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>E-mail</Text>
 
           <TextInput
             value={email}
             onChangeText={setEmail}
             placeholder="cliente@email.com"
-            placeholderTextColor={theme.muted}
+            placeholderTextColor={ui.placeholderColor}
             autoCapitalize="none"
             keyboardType="email-address"
             editable={!loading}
-            style={{
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.background,
-              color: theme.text,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              borderRadius: 12,
-            }}
+            style={styles.input}
           />
 
           <Pressable
             onPress={handleSendInvite}
             disabled={loading}
-            style={{
-              paddingVertical: 14,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-              opacity: loading ? 0.7 : 1,
-            }}
+            style={[styles.submitButton, loading && styles.disabled]}
           >
             {loading ? (
-              <ActivityIndicator />
+              <ActivityIndicator color={ui.activityIndicatorColor} />
             ) : (
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "900",
-                  color: theme.text,
-                }}
-              >
-                Enviar Convite
-              </Text>
+              <Text style={styles.submitButtonText}>Enviar Convite</Text>
             )}
           </Pressable>
 
           <Pressable
             onPress={goBackSafe}
             disabled={loading}
-            style={{
-              paddingVertical: 12,
-              borderRadius: 12,
-              alignItems: "center",
-              opacity: loading ? 0.7 : 1,
-            }}
+            style={[styles.cancelButton, loading && styles.disabled]}
           >
-            <Text style={{ fontWeight: "700", color: theme.muted }}>
-              Cancelar
-            </Text>
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
           </Pressable>
         </View>
 
-        <Text style={{ marginTop: 18, color: theme.muted, textAlign: "center" }}>
+        <Text style={styles.footer}>
           EloMind — plataforma de apoio terapêutico
         </Text>
       </ScrollView>

@@ -11,10 +11,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { createStyles } from "@/styles/therapist/feedbacks/list.styles";
 
-import { listFeedbacksByClient, type FeedbackListItem } from "../../../lib/feedback";
+import {
+  listFeedbacksByClient,
+  type FeedbackListItem,
+} from "../../../lib/feedback";
 
 function formatDate(iso?: string | null) {
   if (!iso) return "—";
@@ -44,7 +47,7 @@ export default function TherapistClientFeedbacksScreen() {
   const params = useLocalSearchParams();
 
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
+  const styles = createStyles((colorScheme ?? "light") as "light" | "dark");
 
   // ✅ aqui [id] = clientId
   const clientId = useMemo(() => {
@@ -93,27 +96,41 @@ export default function TherapistClientFeedbacksScreen() {
     load();
   }, [load]);
 
+  function renderStatusBadge(item: FeedbackListItem) {
+    const s = String(item.status ?? "").toLowerCase();
+    const isApproved = s === "approved";
+    const isRejected = s === "rejected";
+
+    const badgeStyle = isApproved
+      ? styles.badgeApproved
+      : isRejected
+      ? styles.badgeRejected
+      : styles.badgePending;
+
+    const badgeTextStyle = isApproved
+      ? styles.badgeTextApproved
+      : isRejected
+      ? styles.badgeTextRejected
+      : styles.badgeTextPending;
+
+    return (
+      <View style={[styles.badgeBase, badgeStyle]}>
+        <Text style={badgeTextStyle}>{statusLabel(item.status)}</Text>
+      </View>
+    );
+  }
+
   if (!clientId) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 16 }}>
-          <Text style={{ color: theme.text, fontWeight: "900", textAlign: "center" }}>
-            ID do cliente inválido.
-          </Text>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={["top", "left", "right"]}
+      >
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidText}>ID do cliente inválido.</Text>
 
-          <Pressable
-            onPress={goBackSafe}
-            style={{
-              marginTop: 14,
-              paddingVertical: 12,
-              paddingHorizontal: 14,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-            }}
-          >
-            <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+          <Pressable onPress={goBackSafe} style={styles.invalidButton}>
+            <Text style={styles.invalidButtonText}>← Voltar</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -121,121 +138,74 @@ export default function TherapistClientFeedbacksScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={["top", "left", "right"]}
+    >
       {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          backgroundColor: theme.background,
-        }}
-      >
+      <View style={styles.header}>
         <Pressable
           onPress={goBackSafe}
           hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
+          style={styles.backButton}
         >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+          <Text style={styles.backButtonText}>← Voltar</Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            Feedbacks do Cliente
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
-            Cliente #{clientId}
-          </Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Feedbacks do Cliente</Text>
+          <Text style={styles.headerSubtitle}>Cliente #{clientId}</Text>
         </View>
       </View>
 
       {/* Conteúdo */}
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={styles.content}>
         {loading && items.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator />
-            <Text style={{ marginTop: 10, color: theme.muted }}>Carregando...</Text>
+            <Text style={styles.loadingText}>Carregando...</Text>
           </View>
         ) : (
           <FlatList
             data={items}
-            // ✅ evita colisão de key
             keyExtractor={(item) => `${item.id}-${item.reflection_id}`}
-            refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={load} />
+            }
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => {
-              const s = String(item.status ?? "").toLowerCase();
-              const isApproved = s === "approved";
-              const isRejected = s === "rejected";
-
-              const badgeBg = isApproved ? theme.primary : isRejected ? theme.danger : theme.card;
-              const badgeText = isApproved ? "#0B1220" : isRejected ? "#FFFFFF" : theme.text;
-
               const date = item.approved_at ?? item.created_at;
 
               return (
                 <Pressable
-                  // ✅ aqui abrimos o detalhe por reflectionId
-                  onPress={() => r.push(`/(therapist)/feedbacks/details/${item.reflection_id}` as any)}
-                  style={{
-                    padding: 14,
-                    borderWidth: 1,
-                    borderRadius: 14,
-                    marginBottom: 10,
-                    borderColor: theme.border,
-                    backgroundColor: theme.card,
-                  }}
+                  onPress={() =>
+                    r.push(`/(therapist)/feedbacks/details/${item.reflection_id}` as any)
+                  }
+                  style={styles.card}
                 >
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: theme.text, fontWeight: "900", fontSize: 15 }}>
+                  <View style={styles.cardTopRow}>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardTitle}>
                         Reflexão #{item.reflection_id}
                       </Text>
-                      <Text style={{ color: theme.muted, marginTop: 4 }}>{formatDate(date)}</Text>
+                      <Text style={styles.cardDate}>{formatDate(date)}</Text>
                     </View>
 
-                    <View
-                      style={{
-                        alignSelf: "flex-start",
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        borderColor: badgeBg,
-                        backgroundColor: badgeBg,
-                      }}
-                    >
-                      <Text style={{ color: badgeText, fontWeight: "900", fontSize: 12 }}>
-                        {statusLabel(item.status)}
-                      </Text>
-                    </View>
+                    {renderStatusBadge(item)}
                   </View>
 
-                  <Text style={{ color: theme.muted, marginTop: 10 }}>
+                  <Text style={styles.excerptText}>
                     {excerpt(item.ia_generated_content)}
                   </Text>
 
-                  <Text style={{ color: theme.muted, marginTop: 10, fontWeight: "900" }}>
-                    Toque para abrir o detalhe
-                  </Text>
+                  <Text style={styles.hintText}>Toque para abrir o detalhe</Text>
                 </Pressable>
               );
             }}
             ListEmptyComponent={
               !loading ? (
-                <View style={{ paddingTop: 18 }}>
-                  <Text style={{ color: theme.muted }}>
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
                     Nenhum feedback encontrado para este cliente.
                   </Text>
                 </View>

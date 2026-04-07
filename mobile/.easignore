@@ -1,0 +1,7 @@
+android/local.properties
+node_modules
+.git
+.vscode
+.expo
+dist
+build

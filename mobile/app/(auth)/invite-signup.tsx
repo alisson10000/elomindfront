@@ -16,10 +16,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { api } from "@/lib/api";
+import { makeStyles } from "@/styles/auth/invite-signup.styles";
 
 export default function InviteSignupScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = makeStyles(theme);
   const params = useLocalSearchParams();
 
   const code = useMemo(() => {
@@ -65,13 +67,11 @@ export default function InviteSignupScreen() {
     try {
       setLoading(true);
 
-      // ⚠️ Seu backend pode esperar "token" ao invés de "code"
-      // Como no validate ele pediu token, aqui vamos mandar "token" também.
       await api.post("/invitations/signup", {
         token: cleanCode,
         name: cleanName,
         password: cleanPass,
-        email: email || undefined, // se o backend ignorar, ok
+        email: email || undefined,
       });
 
       Alert.alert("Conta criada!", "Agora faça login com seu e-mail e senha.");
@@ -88,30 +88,20 @@ export default function InviteSignupScreen() {
     }
   }
 
-  // Se entrou aqui sem params, evita tela “vazia”
   if (!code) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ fontSize: 18, fontWeight: "900", color: theme.text, marginBottom: 10 }}>
-            Convite inválido
-          </Text>
-          <Text style={{ color: theme.muted, marginBottom: 16 }}>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidTitle}>Convite inválido</Text>
+          <Text style={styles.invalidText}>
             Volte e valide seu código novamente.
           </Text>
 
           <Pressable
             onPress={() => router.replace("/(auth)/invite-code")}
-            style={{
-              paddingVertical: 14,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-            }}
+            style={styles.invalidButton}
           >
-            <Text style={{ fontWeight: "900", color: theme.text }}>
+            <Text style={styles.invalidButtonText}>
               Ir para validar código
             </Text>
           </Pressable>
@@ -121,117 +111,82 @@ export default function InviteSignupScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.keyboard}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {/* Header */}
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 14 }}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
             <Pressable
               onPress={goBackSafe}
               disabled={loading}
-              style={{
-                paddingVertical: 8,
-                paddingHorizontal: 10,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.card,
-                marginRight: 12,
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={[
+                styles.backButton,
+                loading && styles.backButtonDisabled,
+              ]}
             >
-              <Text style={{ fontWeight: "900", color: theme.text }}>← voltar</Text>
+              <Text style={styles.backButtonText}>← voltar</Text>
             </Pressable>
 
-            <Text style={{ fontSize: 18, fontWeight: "900", color: theme.text }}>
-              Criar conta
-            </Text>
+            <Text style={styles.title}>Criar conta</Text>
           </View>
 
-          <Text style={{ color: theme.muted, marginBottom: 18 }}>
+          <Text style={styles.subtitle}>
             Complete seu cadastro usando o convite.
             {email ? ` (${email})` : ""}
           </Text>
 
-          {/* Card */}
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              padding: 16,
-              gap: 12,
-            }}
-          >
-            <Text style={{ fontWeight: "800", color: theme.text }}>Nome</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Nome</Text>
             <TextInput
               value={name}
               onChangeText={setName}
               placeholder="Seu nome"
-              placeholderTextColor={theme.muted}
+              placeholderTextColor={theme.placeholder}
               editable={!loading}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-                color: theme.text,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                borderRadius: 12,
-              }}
+              style={styles.input}
             />
 
-            <Text style={{ fontWeight: "800", color: theme.text }}>Senha</Text>
+            <Text style={styles.label}>Senha</Text>
             <TextInput
               value={password}
               onChangeText={setPassword}
               placeholder="Crie uma senha"
-              placeholderTextColor={theme.muted}
+              placeholderTextColor={theme.placeholder}
               secureTextEntry
               editable={!loading}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.background,
-                color: theme.text,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                borderRadius: 12,
-              }}
+              style={styles.input}
             />
 
             <Pressable
               onPress={handleSignup}
               disabled={loading}
-              style={{
-                paddingVertical: 14,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.card,
-                alignItems: "center",
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+                loading && styles.primaryButtonDisabled,
+              ]}
             >
               {loading ? (
-                <ActivityIndicator />
+                <ActivityIndicator color={theme.primaryText} />
               ) : (
-                <Text style={{ fontSize: 16, fontWeight: "900", color: theme.text }}>
-                  Criar conta
-                </Text>
+                <Text style={styles.primaryButtonText}>Criar conta</Text>
               )}
             </Pressable>
 
             <Pressable
               onPress={() => router.replace("/(auth)/login")}
               disabled={loading}
-              style={{ paddingVertical: 12, borderRadius: 12, alignItems: "center" }}
+              style={[
+                styles.secondaryButton,
+                loading && styles.primaryButtonDisabled,
+              ]}
             >
-              <Text style={{ fontWeight: "700", color: theme.muted }}>
+              <Text style={styles.secondaryButtonText}>
                 Já tenho conta (Login)
               </Text>
             </Pressable>

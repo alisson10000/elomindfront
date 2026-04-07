@@ -12,13 +12,14 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { api } from "../../lib/api";
 
-// ✅ tema EloMind (Colors) + hook de esquema
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { makeStyles } from "@/styles/auth/reset-password.styles";
 
 export default function ResetPasswordScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = makeStyles(theme);
 
   const params = useLocalSearchParams<{ email?: string }>();
   const emailFromParams = useMemo(
@@ -37,14 +38,17 @@ export default function ResetPasswordScreen() {
       Alert.alert("Erro", "Email não encontrado. Volte e informe seu email.");
       return;
     }
+
     if (!token.trim()) {
       Alert.alert("Atenção", "Digite o código/token recebido no email.");
       return;
     }
+
     if (password.length < 8) {
       Alert.alert("Senha fraca", "Use pelo menos 8 caracteres.");
       return;
     }
+
     if (password !== confirm) {
       Alert.alert("Senhas diferentes", "Confirme a mesma senha.");
       return;
@@ -65,6 +69,7 @@ export default function ResetPasswordScreen() {
       const msg =
         e?.response?.data?.detail ||
         "Não foi possível redefinir. Confira o código/token e tente novamente.";
+
       Alert.alert("Erro", msg);
     } finally {
       setLoading(false);
@@ -77,128 +82,82 @@ export default function ResetPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={styles.safe}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={{ flex: 1, padding: 16, justifyContent: "center" }}>
-        <View
-          style={{
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-            padding: 18,
-            shadowColor: theme.text,
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
-            elevation: 2,
-          }}
-        >
+      <View style={styles.container}>
+        <View style={styles.card}>
           <Image
             source={require("../../assets/images/EloMind.png")}
-            style={{ width: 140, height: 60, alignSelf: "center", marginBottom: 10 }}
+            style={styles.logo}
             resizeMode="contain"
           />
 
-          <Text style={{ fontSize: 20, fontWeight: "800", color: theme.text, textAlign: "center" }}>
-            Redefinir senha
-          </Text>
+          <Text style={styles.title}>Redefinir senha</Text>
 
-          <Text style={{ marginTop: 8, color: theme.muted, textAlign: "center" }}>
+          <Text style={styles.subtitle}>
             Digite o código/token do email e crie sua nova senha.
           </Text>
 
-          <View style={{ marginTop: 16, gap: 10 }}>
-            <Text style={{ fontWeight: "800", color: theme.text, marginBottom: 6 }}>
-              Email
-            </Text>
-            <TextInput
-              value={email}
-              editable={false}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.input,
-                color: theme.text,
-                padding: 12,
-                borderRadius: 12,
-                opacity: 0.75,
-              }}
-            />
+          <View style={styles.form}>
+            <View>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                value={email}
+                editable={false}
+                style={[styles.input, styles.disabledInput]}
+              />
+            </View>
 
-            <Text style={{ fontWeight: "800", color: theme.text, marginBottom: 6 }}>
-              Código / Token
-            </Text>
-            <TextInput
-              placeholder="Cole aqui o código/token"
-              placeholderTextColor={theme.icon}
-              autoCapitalize="none"
-              value={token}
-              onChangeText={setToken}
-              editable={!loading}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.input,
-                color: theme.text,
-                padding: 12,
-                borderRadius: 12,
-              }}
-            />
+            <View>
+              <Text style={styles.label}>Código / Token</Text>
+              <TextInput
+                placeholder="Cole aqui o código/token"
+                placeholderTextColor={theme.placeholder}
+                autoCapitalize="none"
+                value={token}
+                onChangeText={setToken}
+                editable={!loading}
+                style={styles.input}
+              />
+            </View>
 
-            <Text style={{ fontWeight: "800", color: theme.text, marginBottom: 6 }}>
-              Nova senha
-            </Text>
-            <TextInput
-              placeholder="••••••••"
-              placeholderTextColor={theme.icon}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              editable={!loading}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.input,
-                color: theme.text,
-                padding: 12,
-                borderRadius: 12,
-              }}
-            />
+            <View>
+              <Text style={styles.label}>Nova senha</Text>
+              <TextInput
+                placeholder="••••••••"
+                placeholderTextColor={theme.placeholder}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                editable={!loading}
+                style={styles.input}
+              />
+            </View>
 
-            <Text style={{ fontWeight: "800", color: theme.text, marginBottom: 6 }}>
-              Confirmar senha
-            </Text>
-            <TextInput
-              placeholder="••••••••"
-              placeholderTextColor={theme.icon}
-              secureTextEntry
-              value={confirm}
-              onChangeText={setConfirm}
-              editable={!loading}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.input,
-                color: theme.text,
-                padding: 12,
-                borderRadius: 12,
-              }}
-            />
+            <View>
+              <Text style={styles.label}>Confirmar senha</Text>
+              <TextInput
+                placeholder="••••••••"
+                placeholderTextColor={theme.placeholder}
+                secureTextEntry
+                value={confirm}
+                onChangeText={setConfirm}
+                editable={!loading}
+                style={styles.input}
+              />
+            </View>
 
             <Pressable
               onPress={handleReset}
               disabled={loading}
-              style={({ pressed }) => ({
-                marginTop: 6,
-                paddingVertical: 12,
-                borderRadius: 12,
-                alignItems: "center",
-                backgroundColor: theme.primary,
-                opacity: loading ? 0.7 : pressed ? 0.9 : 1,
-              })}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+                loading && styles.primaryButtonDisabled,
+              ]}
             >
-              <Text style={{ color: "#FFFFFF", fontWeight: "900" }}>
+              <Text style={styles.primaryButtonText}>
                 {loading ? "Salvando..." : "Salvar nova senha"}
               </Text>
             </Pressable>
@@ -206,18 +165,12 @@ export default function ResetPasswordScreen() {
             <Pressable
               onPress={goBack}
               disabled={loading}
-              style={{
-                marginTop: 8,
-                paddingVertical: 10,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.input,
-                alignItems: "center",
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={[
+                styles.secondaryButton,
+                loading && styles.primaryButtonDisabled,
+              ]}
             >
-              <Text style={{ fontWeight: "900", color: theme.text }}>Voltar</Text>
+              <Text style={styles.secondaryButtonText}>Voltar</Text>
             </Pressable>
           </View>
         </View>

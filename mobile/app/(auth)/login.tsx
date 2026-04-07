@@ -11,23 +11,28 @@ import {
   Switch,
 } from "react-native";
 import { router } from "expo-router";
-
-import { api } from "../../lib/api";
-import { setToken } from "../../lib/token";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { styles } from "../../styles/login.styles";
-import { loadRemember, saveRemember, setSessionOnly } from "../../lib/remember";
 
-// ✅ tema EloMind (Colors) + hook de esquema
+import { api } from "@/lib/api";
+import { setToken } from "@/lib/token";
+import { loadRemember, saveRemember, setSessionOnly } from "@/lib/remember";
+import { setupPushToken } from "@/lib/setup-push-token";
+
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { makeStyles } from "@/styles/auth/login.styles";
 
 type Role = "client" | "therapist";
 
 function normalizeRole(value: any): Role | null {
   if (!value) return null;
-  const r = String(value).toLowerCase();
-  if (r === "client" || r === "therapist") return r as Role;
+
+  const role = String(value).toLowerCase();
+
+  if (role === "client" || role === "therapist") {
+    return role as Role;
+  }
+
   return null;
 }
 
@@ -39,18 +44,28 @@ function routeForRole(role: Role | null) {
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = makeStyles(theme);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // ✅ Carrega email salvo
   useEffect(() => {
     (async () => {
-      const { remember, email: savedEmail } = await loadRemember();
-      setRememberMe(remember);
-      if (savedEmail) setEmail(savedEmail);
+      try {
+        const { remember, email: savedEmail } = await loadRemember();
+
+        console.log("📥 loadRemember:", { remember, savedEmail });
+
+        setRememberMe(remember);
+
+        if (savedEmail) {
+          setEmail(savedEmail);
+        }
+      } catch (error: any) {
+        console.log("❌ Erro ao carregar remember:", error?.message || error);
+      }
     })();
   }, []);
 
@@ -58,6 +73,7 @@ export default function LoginScreen() {
     if (loading) return;
 
     const emailTrim = email.trim();
+
     if (!emailTrim || !password) {
       Alert.alert("Atenção", "Preencha email e senha.");
       return;
@@ -66,31 +82,48 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      // ✅ salva email se rememberMe ON
-      await saveRemember(emailTrim, rememberMe);
+      console.log("🟡 Iniciando login...");
+      console.log("📦 payload login:", {
+        email: emailTrim,
+        password,
+      });
 
-      // 1) Login
-      const res = await api.post("/auth/login", { email: emailTrim, password });
-      const token: string | undefined = res.data?.access_token;
+      await saveRemember(emailTrim, rememberMe);
+      console.log("✅ saveRemember executado");
+
+      const res = await api.post("/auth/login", {
+        email: emailTrim,
+        password,
+      });
+
+      console.log("✅ resposta /auth/login:", res.data);
+
+      const token: string | undefined =
+        res.data?.access_token ?? res.data?.token ?? res.data?.accessToken;
+
+      console.log("🔑 token encontrado:", token ? "SIM ✅" : "NÃO ❌");
 
       if (!token) {
         Alert.alert("Erro", "Token não retornou do servidor.");
         return;
       }
 
-      // ✅ salvar token antes de chamar rotas privadas
       await setToken(token);
+      console.log("✅ setToken executado");
 
-      // ✅ marca sessão:
       await setSessionOnly(!rememberMe);
+      console.log("✅ setSessionOnly executado:", !rememberMe);
 
-      // 2) Descobrir role (preferência: /auth/me)
       let role: Role | null = null;
 
       try {
+        console.log("➡️ GET /auth/me");
+
         const me = await api.get("/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        console.log("✅ resposta /auth/me:", me.data);
 
         role = normalizeRole(
           me.data?.role ??
@@ -99,50 +132,75 @@ export default function LoginScreen() {
             me.data?.type
         );
 
+        console.log("👤 role detectada:", role);
+
         if (role) {
           await AsyncStorage.setItem("user_role", role);
+          console.log("✅ user_role salva:", role);
         } else {
           await AsyncStorage.removeItem("user_role");
+          console.log("⚠️ role não encontrada, user_role removida");
         }
-      } catch {
+      } catch (error: any) {
+        console.log("❌ erro /auth/me status:", error?.response?.status);
+        console.log("❌ erro /auth/me data:", error?.response?.data);
+        console.log("❌ erro /auth/me message:", error?.message);
+
         await AsyncStorage.removeItem("user_role");
         role = null;
       }
 
-      // limpa senha do estado (boa prática)
       setPassword("");
 
-      // ✅ 3) LGPD: só para CLIENTE e só aparece 1x
       if (role === "client") {
         try {
-          const c = await api.get("/consents/me", {
+          console.log("➡️ GET /consents/me");
+
+          const consent = await api.get("/consents/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
 
-          const accepted = Boolean(c.data?.accepted);
+          console.log("✅ resposta /consents/me:", consent.data);
+
+          const accepted = Boolean(consent.data?.accepted);
+          console.log("📄 accepted LGPD:", accepted);
 
           if (!accepted) {
+            console.log("➡️ redirecionando para /consent-lgpd");
             router.replace("/consent-lgpd" as any);
             return;
           }
-        } catch {
-          // Se falhar a checagem, por segurança mostra LGPD
+        } catch (error: any) {
+          console.log("❌ erro /consents/me status:", error?.response?.status);
+          console.log("❌ erro /consents/me data:", error?.response?.data);
+          console.log("❌ erro /consents/me message:", error?.message);
+
           router.replace("/consent-lgpd" as any);
           return;
         }
       }
 
-      // 4) Vai para a área correta
-      router.replace(routeForRole(role) as any);
+      try {
+        console.log("🔔 Chamando setupPushToken após login...");
+        await setupPushToken();
+        console.log("✅ setupPushToken concluído");
+      } catch (error: any) {
+        console.log("❌ Erro ao registrar push:", error?.message || error);
+      }
+
+      const finalRoute = routeForRole(role);
+      console.log("➡️ redirecionando para rota final:", finalRoute);
+      router.replace(finalRoute as any);
     } catch (err: any) {
-      // ✅ tratar 403 User inactive e 401 credenciais inválidas
       const status = err?.response?.status;
       const detailRaw =
         err?.response?.data?.detail ?? err?.response?.data?.message ?? "";
-
       const detail = String(detailRaw).toLowerCase();
 
-      console.log("❌ Erro no login:", err?.message, "|", status, detailRaw);
+      console.log("❌ Erro no login message:", err?.message);
+      console.log("❌ Erro no login status:", status);
+      console.log("❌ Erro no login data:", err?.response?.data);
+      console.log("❌ Erro no login headers:", err?.response?.headers);
 
       if (status === 403 && detail.includes("inactive")) {
         Alert.alert(
@@ -160,58 +218,41 @@ export default function LoginScreen() {
       Alert.alert("Erro no login", "Veja o console.");
     } finally {
       setLoading(false);
+      console.log("🏁 Finalizando handleLogin");
     }
   }
 
-  // ✅ rota REAL (group não entra na URL)
   function goToInviteCode() {
     router.push("/invite-code" as any);
   }
 
-  // ✅ rota REAL (group não entra na URL)
   function goToForgotPassword() {
     router.push("/forgot-password" as any);
   }
 
   return (
     <KeyboardAvoidingView
-      style={[styles.safe, { backgroundColor: theme.background }]}
+      style={styles.safe}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.container}>
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-              shadowColor: theme.text,
-            },
-          ]}
-        >
+        <View style={styles.card}>
           <Image
             source={require("../../assets/images/EloMind.png")}
             style={styles.logo}
             resizeMode="contain"
           />
 
-          <Text style={[styles.subtitle, { color: theme.muted }]}>
+          <Text style={styles.subtitle}>
             Entre para registrar suas reflexões
           </Text>
 
           <View style={styles.form}>
-            <Text style={[styles.label, { color: theme.text }]}>Email</Text>
+            <Text style={styles.label}>Email</Text>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: theme.input,
-                  color: theme.text,
-                },
-              ]}
+              style={styles.input}
               placeholder="seuemail@exemplo.com"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor={theme.placeholder}
               autoCapitalize="none"
               keyboardType="email-address"
               value={email}
@@ -220,22 +261,11 @@ export default function LoginScreen() {
               returnKeyType="next"
             />
 
-            <Text
-              style={[styles.label, styles.labelSpacing, { color: theme.text }]}
-            >
-              Senha
-            </Text>
+            <Text style={[styles.label, styles.labelSpacing]}>Senha</Text>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: theme.input,
-                  color: theme.text,
-                },
-              ]}
+              style={styles.input}
               placeholder="••••••••"
-              placeholderTextColor={theme.icon}
+              placeholderTextColor={theme.placeholder}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -243,18 +273,8 @@ export default function LoginScreen() {
               returnKeyType="done"
             />
 
-            <View
-              style={[
-                styles.rememberRow,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: theme.input,
-                },
-              ]}
-            >
-              <Text style={[styles.rememberText, { color: theme.text }]}>
-                Lembrar email
-              </Text>
+            <View style={styles.rememberRow}>
+              <Text style={styles.rememberText}>Lembrar email</Text>
               <Switch
                 value={rememberMe}
                 onValueChange={setRememberMe}
@@ -266,19 +286,17 @@ export default function LoginScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                { backgroundColor: theme.primary, shadowColor: theme.text },
                 pressed && styles.buttonPressed,
                 loading && styles.buttonDisabled,
               ]}
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={[styles.buttonText, { color: "#FFFFFF" }]}>
+              <Text style={styles.buttonText}>
                 {loading ? "Entrando..." : "Entrar"}
               </Text>
             </Pressable>
 
-            {/* ✅ Esqueci minha senha */}
             <Pressable
               onPress={goToForgotPassword}
               disabled={loading}
@@ -294,7 +312,6 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
-            {/* ✅ link para fluxo de convite */}
             <Pressable
               onPress={goToInviteCode}
               disabled={loading}
@@ -314,7 +331,7 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
-            <Text style={[styles.footer, { color: theme.icon }]}>
+            <Text style={styles.footer}>
               Dica: use o mesmo usuário que você criou no Swagger.
             </Text>
           </View>

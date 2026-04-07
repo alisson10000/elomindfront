@@ -14,12 +14,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { listMyReflections, deleteReflection } from "../../../lib/reflections";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-
+import { createStyles } from "../../../styles/client/reflections/index.styles";
 export default function ReflectionsHistory() {
   const r = useRouter();
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = createStyles(theme);
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +54,7 @@ export default function ReflectionsHistory() {
       console.log("❌ item sem id:", item);
       return;
     }
-    // passa também can_delete e os textos pra tela [id] conseguir mostrar sem endpoint extra
+
     r.push({
       pathname: "/(client)/reflections/[id]" as any,
       params: {
@@ -95,41 +96,19 @@ export default function ReflectionsHistory() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "left", "right"]}>
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          paddingTop: 8,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: theme.background,
-          gap: 12,
-        }}
-      >
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <View style={styles.header}>
         <Pressable
           onPress={goBackSafe}
           hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
+          style={styles.headerButton}
         >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+          <Text style={styles.headerButtonText}>← Voltar</Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            Minhas Reflexões
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Minhas Reflexões</Text>
+          <Text style={styles.subtitle}>
             Toque em uma reflexão para ver detalhes
           </Text>
         </View>
@@ -137,25 +116,17 @@ export default function ReflectionsHistory() {
         <Pressable
           onPress={() => r.push("/(client)/reflections/new" as any)}
           hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
+          style={styles.headerButton}
         >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>+ Nova</Text>
+          <Text style={styles.headerButtonText}>+ Nova</Text>
         </Pressable>
       </View>
 
-      {/* Conteúdo */}
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={styles.content}>
         {loading && items.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator />
-            <Text style={{ marginTop: 10, color: theme.muted }}>
+            <Text style={styles.loadingText}>
               Carregando suas reflexões...
             </Text>
           </View>
@@ -163,29 +134,22 @@ export default function ReflectionsHistory() {
           <FlatList
             data={items}
             keyExtractor={(item, index) => String(item?.id ?? index)}
-            refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={load} />
+            }
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-              <View
-                style={{
-                  padding: 14,
-                  borderWidth: 1,
-                  borderRadius: 14,
-                  marginBottom: 10,
-                  borderColor: theme.border,
-                  backgroundColor: theme.card,
-                }}
-              >
+              <View style={styles.card}>
                 <Pressable onPress={() => openDetail(item)}>
-                  <Text style={{ fontWeight: "900", color: theme.text }}>
+                  <Text style={styles.cardTitle}>
                     Reflexão #{String(item?.id ?? "-")}
                   </Text>
 
-                  <Text numberOfLines={2} style={{ marginTop: 6, color: theme.text }}>
+                  <Text numberOfLines={2} style={styles.cardDescription}>
                     {String(item?.feeling_after_session ?? "")}
                   </Text>
 
-                  <Text style={{ marginTop: 6, color: theme.muted }}>
+                  <Text style={styles.cardHint}>
                     Toque para ver detalhes e feedback
                   </Text>
                 </Pressable>
@@ -193,20 +157,12 @@ export default function ReflectionsHistory() {
                 {item?.can_delete ? (
                   <Pressable
                     onPress={() => confirmDelete(item)}
-                    style={{
-                      marginTop: 12,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    }}
+                    style={styles.deleteButton}
                   >
-                    <Text style={{ color: theme.text, fontWeight: "900" }}>Excluir</Text>
+                    <Text style={styles.deleteButtonText}>Excluir</Text>
                   </Pressable>
                 ) : (
-                  <Text style={{ marginTop: 10, color: theme.muted }}>
+                  <Text style={styles.blockedDeleteText}>
                     Não é possível excluir (feedback aprovado).
                   </Text>
                 )}
@@ -214,8 +170,8 @@ export default function ReflectionsHistory() {
             )}
             ListEmptyComponent={
               !loading ? (
-                <View style={{ paddingTop: 18 }}>
-                  <Text style={{ color: theme.muted }}>
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
                     Você ainda não criou nenhuma reflexão.
                   </Text>
                 </View>

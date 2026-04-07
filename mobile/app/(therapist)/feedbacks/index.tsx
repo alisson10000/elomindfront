@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { createStyles } from "@/styles/therapist/feedbacks/index.styles";
 
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/token";
@@ -65,7 +65,7 @@ export default function TherapistFeedbacksIndexScreen() {
 
   const r = useRouter();
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
+  const styles = createStyles((colorScheme ?? "light") as "light" | "dark");
 
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<ClientWithFeedback[]>([]);
@@ -132,94 +132,64 @@ export default function TherapistFeedbacksIndexScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={styles.safeArea}
       edges={["top", "left", "right"]}
     >
       {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          backgroundColor: theme.background,
-        }}
-      >
+      <View style={styles.header}>
         <Pressable
           onPress={goBackSafe}
           hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
+          style={styles.backButton}
         >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+          <Text style={styles.backButtonText}>← Voltar</Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            Feedbacks já dados
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>{subtitle}</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Feedbacks já dados</Text>
+          <Text style={styles.headerSubtitle}>{subtitle}</Text>
         </View>
       </View>
 
       {/* Conteúdo */}
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={styles.content}>
         {loading && clients.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator />
-            <Text style={{ marginTop: 10, color: theme.muted }}>Carregando...</Text>
+            <Text style={styles.loadingText}>Carregando...</Text>
           </View>
         ) : (
           <FlatList
             data={clients}
             keyExtractor={(item) => String(item.id)}
             refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => {
               const title = item.name?.trim() || `Cliente #${item.id}`;
+
               return (
                 <Pressable
                   onPress={() => r.push(`/(therapist)/feedbacks/${item.id}` as any)}
-                  style={{
-                    padding: 14,
-                    borderWidth: 1,
-                    borderRadius: 14,
-                    marginBottom: 10,
-                    borderColor: theme.border,
-                    backgroundColor: theme.card,
-                  }}
+                  style={styles.card}
                 >
-                  <Text style={{ color: theme.text, fontWeight: "900", fontSize: 15 }}>
-                    {title}
-                  </Text>
+                  <Text style={styles.cardTitle}>{title}</Text>
 
                   {!!item.email && (
-                    <Text style={{ color: theme.muted, marginTop: 4 }}>{item.email}</Text>
+                    <Text style={styles.cardEmail}>{item.email}</Text>
                   )}
 
-                  <Text style={{ color: theme.muted, marginTop: 8 }}>
+                  <Text style={styles.cardCount}>
                     {item.feedbackCount} feedback(s)
                   </Text>
 
-                  <Text style={{ color: theme.muted, marginTop: 8, fontWeight: "900" }}>
-                    Toque para ver a lista
-                  </Text>
+                  <Text style={styles.cardHint}>Toque para ver a lista</Text>
                 </Pressable>
               );
             }}
             ListEmptyComponent={
               !loading ? (
-                <View style={{ paddingTop: 18 }}>
-                  <Text style={{ color: theme.muted }}>
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
                     Nenhum cliente com feedback encontrado.
                   </Text>
                 </View>

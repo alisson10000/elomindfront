@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "241045320996",
+    "project_id": "elomind-d50b7",
+    "storage_bucket": "elomind-d50b7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241045320996:android:64e37e25770cb13319efb1",
+        "android_client_info": {
+          "package_name": "com.alisson10000.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA48YEdkfpe1ijTl5onkyGhXYm79KiyjYI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

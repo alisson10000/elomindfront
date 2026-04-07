@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { getFeedbackByReflection, deleteReflection } from "../../../lib/reflections";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { createStyles } from "@/styles/client/reflections/id.styles";
 
 export default function ReflectionDetail() {
   const r = useRouter();
@@ -20,6 +21,7 @@ export default function ReflectionDetail() {
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = createStyles(theme);
 
   const reflectionId = useMemo(() => {
     const raw = (params as any)?.id;
@@ -105,7 +107,6 @@ export default function ReflectionDetail() {
   function goToEdit() {
     if (!reflectionId) return;
 
-    // ✅ REGRA: não permitir editar após feedback aprovado
     if (!canDelete) {
       Alert.alert("Edição bloqueada", "Não é possível editar após feedback aprovado.");
       return;
@@ -115,13 +116,29 @@ export default function ReflectionDetail() {
       pathname: "/(client)/reflections/edit/[id]" as any,
       params: {
         id: String(reflectionId),
-        can_edit: String(canDelete), // ✅ proteção extra para a tela de edição
+        can_edit: String(canDelete),
         feeling_after_session: reflectionData.feeling_after_session ?? "",
         what_learned: reflectionData.what_learned ?? "",
         positive_point: reflectionData.positive_point ?? "",
-        resistance_or_disagreement: reflectionData.resistance_or_disagreement ?? "",
+        resistance_or_disagreement:
+          reflectionData.resistance_or_disagreement ?? "",
       },
     } as any);
+  }
+
+  function Card({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        {children}
+      </View>
+    );
   }
 
   useEffect(() => {
@@ -130,56 +147,22 @@ export default function ReflectionDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reflectionId]);
 
-  function Card({ title, children }: { title: string; children: any }) {
-    return (
-      <View
-        style={{
-          padding: 16,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: theme.border,
-          backgroundColor: theme.card,
-        }}
-      >
-        <Text style={{ color: theme.text, fontWeight: "900", marginBottom: 8 }}>
-          {title}
-        </Text>
-        {children}
-      </View>
-    );
-  }
-
-  // ID inválido
   if (!reflectionId) {
     return (
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: theme.background }}
+        style={styles.safeArea}
         edges={["top", "left", "right"]}
       >
-        <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text
-            style={{
-              color: theme.text,
-              fontSize: 16,
-              fontWeight: "900",
-              marginBottom: 12,
-            }}
-          >
+        <View style={styles.invalidContainer}>
+          <Text style={styles.invalidTitle}>
             Não consegui abrir essa reflexão (ID inválido).
           </Text>
 
           <Pressable
             onPress={() => r.replace("/(client)/reflections" as any)}
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-            }}
+            style={styles.primaryGhostButton}
           >
-            <Text style={{ color: theme.text, fontWeight: "800" }}>
+            <Text style={styles.primaryGhostButtonText}>
               Voltar para Minhas Reflexões
             </Text>
           </Pressable>
@@ -190,105 +173,79 @@ export default function ReflectionDetail() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: theme.background }}
+      style={styles.safeArea}
       edges={["top", "left", "right"]}
     >
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingTop: 8,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-          backgroundColor: theme.background,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
+      <View style={styles.header}>
         <Pressable
           onPress={goBackSafe}
           hitSlop={16}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.card,
-          }}
+          style={styles.headerButton}
         >
-          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+          <Text style={styles.headerButtonText}>← Voltar</Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
-            Reflexão #{reflectionId}
-          </Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>
-            Detalhes e feedback
-          </Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Reflexão #{reflectionId}</Text>
+          <Text style={styles.headerSubtitle}>Detalhes e feedback</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {/* Data */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {!!reflectionData.created_at && (
-          <Text style={{ color: theme.muted, marginBottom: 12 }}>
+          <Text style={styles.createdAtText}>
             {new Date(reflectionData.created_at).toLocaleString()}
           </Text>
         )}
 
-        {/* Dados da reflexão */}
-        <View style={{ gap: 12 }}>
+        <View style={styles.sectionGroup}>
           <Card title="Como você se sentiu após a sessão?">
-            <Text style={{ color: theme.text, lineHeight: 20 }}>
+            <Text style={styles.cardText}>
               {reflectionData.feeling_after_session || "-"}
             </Text>
           </Card>
 
           <Card title="O que você aprendeu ou percebeu?">
-            <Text style={{ color: theme.text, lineHeight: 20 }}>
+            <Text style={styles.cardText}>
               {reflectionData.what_learned || "-"}
             </Text>
           </Card>
 
           <Card title="Qual ponto positivo você destaca?">
-            <Text style={{ color: theme.text, lineHeight: 20 }}>
+            <Text style={styles.cardText}>
               {reflectionData.positive_point || "-"}
             </Text>
           </Card>
 
           {!!reflectionData.resistance_or_disagreement && (
             <Card title="Resistência/discordância">
-              <Text style={{ color: theme.text, lineHeight: 20 }}>
+              <Text style={styles.cardText}>
                 {reflectionData.resistance_or_disagreement}
               </Text>
             </Card>
           )}
         </View>
 
-        {/* Feedback */}
-        <View style={{ marginTop: 18, gap: 12 }}>
+        <View style={styles.feedbackSection}>
           {loading ? (
-            <View style={{ paddingTop: 10, alignItems: "center" }}>
+            <View style={styles.loadingContainer}>
               <ActivityIndicator />
-              <Text style={{ marginTop: 10, color: theme.muted }}>
-                Carregando feedback...
-              </Text>
+              <Text style={styles.loadingText}>Carregando feedback...</Text>
             </View>
           ) : feedback ? (
-            <View style={{ gap: 12 }}>
+            <View style={styles.sectionGroup}>
               <Card title="Feedback">
-                <Text style={{ color: theme.text, lineHeight: 20 }}>
+                <Text style={styles.cardText}>
                   {feedback?.ia_generated_content ?? ""}
                 </Text>
               </Card>
 
               {!!feedback?.ia_neuro_nutrition_tip && (
                 <Card title="Dica Neuro Nutrição">
-                  <Text style={{ color: theme.text, lineHeight: 20 }}>
+                  <Text style={styles.cardText}>
                     {feedback.ia_neuro_nutrition_tip}
                   </Text>
                 </Card>
@@ -296,7 +253,7 @@ export default function ReflectionDetail() {
 
               {!!feedback?.ia_activity_suggestion && (
                 <Card title="Atividade sugerida">
-                  <Text style={{ color: theme.text, lineHeight: 20 }}>
+                  <Text style={styles.cardText}>
                     {feedback.ia_activity_suggestion}
                   </Text>
                 </Card>
@@ -304,50 +261,30 @@ export default function ReflectionDetail() {
             </View>
           ) : (
             <Card title="Ainda não disponível">
-              <Text style={{ color: theme.muted, lineHeight: 20 }}>
+              <Text style={styles.mutedCardText}>
                 {message ?? "Sem feedback ainda."}
               </Text>
             </Card>
           )}
 
-          {/* Botões */}
           <Pressable
             onPress={loadFeedback}
             hitSlop={16}
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-              alignItems: "center",
-            }}
+            style={styles.actionButton}
           >
-            <Text style={{ color: theme.text, fontWeight: "800" }}>
-              Atualizar feedback
-            </Text>
+            <Text style={styles.actionButtonText}>Atualizar feedback</Text>
           </Pressable>
 
-          {/* ✅ Editar reflexão (somente se permitido) */}
           {canDelete ? (
             <Pressable
               onPress={goToEdit}
               hitSlop={16}
-              style={{
-                padding: 16,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.card,
-                alignItems: "center",
-              }}
+              style={styles.actionButton}
             >
-              <Text style={{ color: theme.text, fontWeight: "900" }}>
-                Editar reflexão
-              </Text>
+              <Text style={styles.strongActionButtonText}>Editar reflexão</Text>
             </Pressable>
           ) : (
-            <Text style={{ color: theme.muted, textAlign: "center" }}>
+            <Text style={styles.infoTextCenter}>
               Não é possível editar (feedback aprovado).
             </Text>
           )}
@@ -356,21 +293,12 @@ export default function ReflectionDetail() {
             <Pressable
               onPress={confirmDelete}
               hitSlop={16}
-              style={{
-                padding: 16,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.card,
-                alignItems: "center",
-              }}
+              style={styles.actionButton}
             >
-              <Text style={{ color: theme.text, fontWeight: "900" }}>
-                Excluir reflexão
-              </Text>
+              <Text style={styles.strongActionButtonText}>Excluir reflexão</Text>
             </Pressable>
           ) : (
-            <Text style={{ color: theme.muted, textAlign: "center" }}>
+            <Text style={styles.infoTextCenter}>
               Não é possível excluir (feedback aprovado).
             </Text>
           )}

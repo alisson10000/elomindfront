@@ -10,7 +10,7 @@ import Screen from "@/components/Screen";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 
-import { createStyles } from "./styles";
+import { createStyles } from "../../../styles/auth/consent-lgpd.styles";
 
 export default function ConsentLgpdScreen() {
   const colorScheme = useColorScheme();

@@ -6,10 +6,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { clearToken, getToken } from "../../../lib/token";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { makeStyles } from "@/styles/client/tabs/profile.styles";
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const styles = makeStyles(theme);
 
   useEffect(() => {
     console.log("✅ PROFILE ABRIU (mount)");
@@ -33,35 +35,27 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={{ flex: 1, padding: 24, justifyContent: "center", backgroundColor: theme.background }}>
-      <Text style={{ fontSize: 22, fontWeight: "900", marginBottom: 18, color: theme.text, textAlign: "center" }}>
-        Perfil
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Perfil</Text>
 
-      <View style={{ borderWidth: 1, borderColor: theme.border, backgroundColor: theme.card, borderRadius: 14, padding: 16 }}>
-        <Text style={{ color: theme.muted, textAlign: "center", marginBottom: 12 }}>
+      <View style={styles.card}>
+        <Text style={styles.description}>
           Você pode sair da sua conta a qualquer momento.
         </Text>
 
         <Pressable
           onPress={handleLogout}
           hitSlop={16}
-          style={{
-            paddingVertical: 14,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: (theme as any).danger ?? theme.border,
-            backgroundColor: (theme as any).danger ?? theme.card,
-            alignItems: "center",
-          }}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            pressed && styles.logoutButtonPressed,
+          ]}
         >
-          <Text style={{ fontSize: 16, fontWeight: "900", color: (theme as any).danger ? "#FFFFFF" : theme.text }}>
-            Sair
-          </Text>
+          <Text style={styles.logoutButtonText}>Sair</Text>
         </Pressable>
       </View>
 
-      <Text style={{ marginTop: 14, color: theme.muted, textAlign: "center" }}>
+      <Text style={styles.footerText}>
         EloMind — cuide de você com consistência.
       </Text>
     </View>
