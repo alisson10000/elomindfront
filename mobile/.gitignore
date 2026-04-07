@@ -43,3 +43,5 @@ app-example
 /ios
 /android
 android/local.properties
+mobile/firebase/*.json
+mobile/firebase/elomind-d50b7-firebase-adminsdk-fbsvc-26b42e2f9d.json
