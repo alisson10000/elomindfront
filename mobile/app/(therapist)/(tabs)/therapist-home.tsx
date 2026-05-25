@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 
+import { ROUTES } from "@/constants/routes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { makeStyles } from "@/styles/therapist/tabs/therapist-home.styles";
@@ -42,31 +43,31 @@ export default function TherapistHome() {
         <CardButton
           label="Meus Clientes"
           styles={styles}
-          onPress={() => router.push("/(therapist)/client" as any)}
+          onPress={() => router.push(ROUTES.therapist.clients)}
         />
 
         <CardButton
           label="Reflexões pendentes dos Clientes"
           styles={styles}
-          onPress={() => router.push("/(therapist)/reflections" as any)}
+          onPress={() => router.push(ROUTES.therapist.reflections)}
         />
 
         <CardButton
           label="Feedbacks já dados"
           styles={styles}
-          onPress={() => router.push("/(therapist)/feedbacks" as any)}
+          onPress={() => router.push(ROUTES.therapist.feedbacks)}
         />
 
         <CardButton
           label="Meu Perfil"
           styles={styles}
-          onPress={() => router.push("/(therapist)/(tabs)/profile" as any)}
+          onPress={() => router.push(ROUTES.therapist.profile)}
         />
 
         <CardButton
           label="Convidar Cliente"
           styles={styles}
-          onPress={() => router.push("/(therapist)/invite-client" as any)}
+          onPress={() => router.push(ROUTES.therapist.inviteClient)}
         />
       </View>
 

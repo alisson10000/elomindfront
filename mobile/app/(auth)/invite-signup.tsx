@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { api } from "@/lib/api";
+import { signupWithInvitation } from "@/lib/services/invitation-service";
 import { makeStyles } from "@/styles/auth/invite-signup.styles";
 
 export default function InviteSignupScreen() {
@@ -67,7 +67,7 @@ export default function InviteSignupScreen() {
     try {
       setLoading(true);
 
-      await api.post("/invitations/signup", {
+      await signupWithInvitation({
         token: cleanCode,
         name: cleanName,
         password: cleanPass,

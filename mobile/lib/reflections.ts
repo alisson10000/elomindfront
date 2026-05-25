@@ -1,11 +1,5 @@
 import { api } from "./api";
 
-/**
- * =========================
- * Types
- * =========================
- */
-
 export type PendingReflection = {
   id: number;
   client_id: number;
@@ -56,24 +50,12 @@ export type UpdateReflectionPayload = {
   resistance_or_disagreement?: string;
 };
 
-/**
- * =========================
- * Debug
- * =========================
- */
-
-const DEBUG = true;
+const DEBUG = false;
 
 function log(...args: unknown[]) {
   if (!DEBUG) return;
   console.log(...args);
 }
-
-/**
- * =========================
- * Helpers
- * =========================
- */
 
 function isValidId(value: number): boolean {
   return Number.isFinite(value) && value > 0;
@@ -94,45 +76,30 @@ function asArray<T>(data: unknown): T[] {
   return [];
 }
 
-/**
- * Faz GET com fallback.
- * Só tenta o fallback se a rota principal devolver 404.
- * Para outros erros (401, 403, 500, rede), relança o erro.
- */
+// Faz GET com fallback. Só tenta o fallback se a rota principal devolver 404.
 async function getWithFallback<T>(
   primaryUrl: string,
   fallbackUrl: string
 ): Promise<T> {
   try {
-    log("➡️ GET (primary)", primaryUrl);
+    log("GET (primary)", primaryUrl);
     const res = await api.get<T>(primaryUrl);
     return res.data;
   } catch (error: any) {
     const status = error?.response?.status;
-    log("⚠️ primary failed:", { status, primaryUrl });
+    log("primary failed:", { status, primaryUrl });
 
     if (status !== 404) {
       throw error;
     }
 
-    log("➡️ GET (fallback)", fallbackUrl);
+    log("GET (fallback)", fallbackUrl);
     const res = await api.get<T>(fallbackUrl);
     return res.data;
   }
 }
 
-/**
- * =========================
- * THERAPIST
- * =========================
- *
- * No seu backend atual:
- * - /reflections/pending => 200
- * - /therapist/reflections/pending => 404
- *
- * Então aqui a prioridade fica em /reflections/...
- */
-
+// No backend atual, a rota /reflections/... tem prioridade sobre /therapist/reflections/...
 export async function listPendingReflections(): Promise<PendingReflection[]> {
   const data = await getWithFallback<unknown>(
     "/reflections/pending",
@@ -140,7 +107,7 @@ export async function listPendingReflections(): Promise<PendingReflection[]> {
   );
 
   const arr = asArray<PendingReflection>(data);
-  log("✅ listPendingReflections:", { len: arr.length });
+  log("listPendingReflections:", { len: arr.length });
   return arr;
 }
 
@@ -156,10 +123,10 @@ export async function getTherapistReflectionDetail(
     );
 
     const result = data ?? null;
-    log("✅ getTherapistReflectionDetail:", { id, ok: !!result });
+    log("getTherapistReflectionDetail:", { id, ok: !!result });
     return result;
   } catch (error: any) {
-    log("❌ getTherapistReflectionDetail failed:", {
+    log("getTherapistReflectionDetail failed:", {
       id,
       message: error?.message,
       status: error?.response?.status,
@@ -168,16 +135,10 @@ export async function getTherapistReflectionDetail(
   }
 }
 
-/**
- * =========================
- * CLIENT
- * =========================
- */
-
 export async function listMyReflections(): Promise<MyReflectionListItem[]> {
   const res = await api.get<unknown>("/reflections/me");
   const arr = asArray<MyReflectionListItem>(res.data);
-  log("✅ listMyReflections:", { len: arr.length });
+  log("listMyReflections:", { len: arr.length });
   return arr;
 }
 
@@ -189,10 +150,10 @@ export async function getMyReflectionDetail(
   try {
     const res = await api.get<ReflectionDetail | null>(`/reflections/${id}`);
     const data = res.data ?? null;
-    log("✅ getMyReflectionDetail:", { id, ok: !!data });
+    log("getMyReflectionDetail:", { id, ok: !!data });
     return data;
   } catch (error: any) {
-    log("❌ getMyReflectionDetail failed:", {
+    log("getMyReflectionDetail failed:", {
       id,
       message: error?.message,
       status: error?.response?.status,
@@ -203,7 +164,7 @@ export async function getMyReflectionDetail(
 
 export async function createReflection(payload: CreateReflectionPayload) {
   const res = await api.post("/reflections/", payload);
-  log("✅ createReflection:", { ok: !!res.data });
+  log("createReflection:", { ok: !!res.data });
   return res.data;
 }
 
@@ -212,7 +173,7 @@ export async function updateReflection(
   payload: UpdateReflectionPayload
 ) {
   const res = await api.patch(`/reflections/${id}`, payload);
-  log("✅ updateReflection:", { id, ok: !!res.data });
+  log("updateReflection:", { id, ok: !!res.data });
   return res.data;
 }
 
@@ -222,10 +183,10 @@ export async function deleteReflection(id: number): Promise<boolean> {
   try {
     const res = await api.delete(`/reflections/${id}`);
     const ok = res.status >= 200 && res.status < 300;
-    log("✅ deleteReflection:", { id, ok, status: res.status });
+    log("deleteReflection:", { id, ok, status: res.status });
     return ok;
   } catch (error: any) {
-    log("❌ deleteReflection failed:", {
+    log("deleteReflection failed:", {
       id,
       message: error?.message,
       status: error?.response?.status,
@@ -234,14 +195,7 @@ export async function deleteReflection(id: number): Promise<boolean> {
   }
 }
 
-/**
- * =========================
- * FEEDBACK
- * =========================
- *
- * Tenta a rota principal e só usa fallback em 404.
- */
-
+// Tenta a rota principal e só usa fallback em 404.
 export async function getFeedbackByReflection(
   reflectionId: number
 ): Promise<Feedback | null> {
@@ -254,13 +208,13 @@ export async function getFeedbackByReflection(
     );
 
     const result = data ?? null;
-    log("✅ getFeedbackByReflection:", {
+    log("getFeedbackByReflection:", {
       reflectionId,
       ok: !!result,
     });
     return result;
   } catch (error: any) {
-    log("❌ getFeedbackByReflection failed:", {
+    log("getFeedbackByReflection failed:", {
       reflectionId,
       message: error?.message,
       status: error?.response?.status,

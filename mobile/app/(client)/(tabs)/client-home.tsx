@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 
+import { ROUTES } from "@/constants/routes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { makeStyles } from "@/styles/client/tabs/client-home.styles";
@@ -15,7 +16,7 @@ export default function ClientHome() {
       <Text style={styles.title}>Bem-vindo ao EloMind</Text>
 
       <Pressable
-        onPress={() => router.push("/(client)/reflections" as any)}
+        onPress={() => router.push(ROUTES.client.reflections)}
         style={({ pressed }) => [
           styles.cardButton,
           pressed && styles.buttonPressed,
@@ -25,7 +26,7 @@ export default function ClientHome() {
       </Pressable>
 
       <Pressable
-        onPress={() => router.push("/(client)/reflections/new" as any)}
+        onPress={() => router.push(ROUTES.client.newReflection)}
         style={({ pressed }) => [
           styles.primaryButton,
           pressed && styles.buttonPressed,
@@ -35,7 +36,7 @@ export default function ClientHome() {
       </Pressable>
 
       <Pressable
-        onPress={() => router.push("/(client)/dreams/new" as any)}
+        onPress={() => router.push(ROUTES.client.dreamsNew)}
         style={({ pressed }) => [
           styles.primaryButton,
           pressed && styles.buttonPressed,
@@ -45,7 +46,7 @@ export default function ClientHome() {
       </Pressable>
 
       <Pressable
-        onPress={() => router.push({ pathname: "/(client)/privacy" as any })}
+        onPress={() => router.push(ROUTES.client.privacy)}
         style={({ pressed }) => [
           styles.cardButton,
           pressed && styles.buttonPressed,

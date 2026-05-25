@@ -3,27 +3,22 @@ import { useEffect } from "react";
 import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { registerForPushNotificationsAsync } from "../../../lib/push-notifications";
 import { savePushToken } from "@/lib/push-token-api";
+import { registerForPushNotificationsAsync } from "@/lib/push-notifications";
 
 export default function ClientTabsLayout() {
   useEffect(() => {
     async function setupPushToken() {
       try {
-        console.log("🔔 Iniciando setupPushToken");
-
         const token = await registerForPushNotificationsAsync();
-        console.log("🔔 Token recebido:", token);
 
         if (!token) {
-          console.log("⚠️ Push ignorado (Expo Go ou erro)");
           return;
         }
 
         await savePushToken(token, Platform.OS);
-        console.log("✅ Push token salvo");
       } catch (error: any) {
-        console.log("❌ Erro push:", error?.message || error);
+        console.error("Erro push:", error?.message || error);
       }
     }
 

@@ -4,7 +4,7 @@ import { router } from "expo-router";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { api } from "@/lib/api";
+import { acceptConsent } from "@/lib/services/consent-service";
 
 import Screen from "@/components/Screen";
 import Card from "@/components/Card";
@@ -28,9 +28,9 @@ export default function ConsentLgpdScreen() {
 
     try {
       setLoading(true);
-      await api.post("/consents", { accepted: true });
+      await acceptConsent();
       Alert.alert("Obrigado!", "Consentimento registrado.");
-      router.replace("/(client)/(tabs)" as any);
+      router.replace("/(client)/(tabs)/client-home");
     } catch (err: any) {
       const detail =
         err?.response?.data?.detail ||

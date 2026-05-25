@@ -56,7 +56,7 @@ export default function NewDream() {
           created.created_at
         )}` as any
       );
-    } catch (e: any) {
+    } catch {
       Alert.alert("Erro", "Não foi possível registrar o sonho.");
     } finally {
       setSaving(false);
@@ -91,7 +91,7 @@ export default function NewDream() {
           value={description}
           onChangeText={setDescription}
           style={styles.input}
-          placeholder="Descreva o sonho…"
+          placeholder="Descreva o sonho..."
           placeholderTextColor={theme.icon}
           multiline
           textAlignVertical="top"

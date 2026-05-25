@@ -1,39 +1,25 @@
 import { useEffect } from "react";
 import { router } from "expo-router";
-import { getToken, clearToken } from "../lib/token";
-import { isSessionOnly, clearSessionOnly } from "../lib/remember";
-import { getUserRoleFromToken } from "../lib/authRole";
 
-type Role = "client" | "therapist";
-
-function pickStartRoute(role: Role | null) {
-  if (role === "therapist") return "/(therapist)/(tabs)/therapist-home";
-  return "/(client)/(tabs)/client-home";
-}
+import { getInitialRouteFromSession, restoreSession } from "../lib/auth";
 
 export default function Index() {
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
-      const sessionOnly = await isSessionOnly();
+      const session = await restoreSession();
 
-      if (sessionOnly) {
-        await clearToken();
-        await clearSessionOnly();
-        router.replace("/(auth)/login");
+      if (!mounted) {
         return;
       }
 
-      const token = await getToken();
-      if (!token) {
-        router.replace("/(auth)/login");
-        return;
-      }
-
-      const role = getUserRoleFromToken(token) as Role | null;
-      const target = pickStartRoute(role);
-
-      router.replace(target as any);
+      router.replace(getInitialRouteFromSession(session));
     })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return null;

@@ -17,8 +17,7 @@ import {
   createStyles,
   getInviteClientTheme,
 } from "@/styles/therapist/invite-client/index.styles";
-import { api } from "@/lib/api";
-import { getToken } from "@/lib/token";
+import { sendInvitation } from "@/lib/services/invitation-service";
 
 type Scheme = "light" | "dark";
 
@@ -46,18 +45,7 @@ export default function InviteClientScreen() {
     try {
       setLoading(true);
 
-      const token = await getToken();
-      if (!token) {
-        Alert.alert("Sessão expirada", "Faça login novamente.");
-        router.replace("/(auth)/login");
-        return;
-      }
-
-      await api.post(
-        "/invitations",
-        { email: cleanEmail },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await sendInvitation({ email: cleanEmail });
 
       Alert.alert(
         "Convite enviado!",
@@ -67,6 +55,12 @@ export default function InviteClientScreen() {
       setEmail("");
       goBackSafe();
     } catch (err: any) {
+      if (err?.message === "NO_TOKEN") {
+        Alert.alert("Sessão expirada", "Faça login novamente.");
+        router.replace("/(auth)/login");
+        return;
+      }
+
       const msg =
         err?.response?.data?.detail ||
         err?.message ||

@@ -3,6 +3,7 @@ import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
+import { ROUTES } from "@/constants/routes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { makeStyles } from "@/styles/client/privacy/privacy.styles";
@@ -25,8 +26,8 @@ export default function PrivacyScreen() {
   const [req, setReq] = useState<DataDeletionRequestOut | null>(null);
 
   function goBackSafe() {
-    if ((r as any).canGoBack?.()) (r as any).back();
-    else r.replace("/(client)" as any);
+    if (r.canGoBack()) r.back();
+    else r.replace(ROUTES.client.tabsHome);
   }
 
   async function load() {
@@ -114,10 +115,7 @@ export default function PrivacyScreen() {
 
         <Pressable
           onPress={load}
-          style={[
-            styles.button,
-            (loading || saving) && styles.buttonDisabled,
-          ]}
+          style={[styles.button, (loading || saving) && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>Atualizar status</Text>
         </Pressable>
@@ -133,8 +131,8 @@ export default function PrivacyScreen() {
             {isPending
               ? "Pedido já está pendente"
               : saving
-              ? "Solicitando..."
-              : "Solicitar exclusão total"}
+                ? "Solicitando..."
+                : "Solicitar exclusão total"}
           </Text>
         </Pressable>
 

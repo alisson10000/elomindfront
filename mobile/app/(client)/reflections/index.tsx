@@ -6,15 +6,18 @@ import {
   RefreshControl,
   Text,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { listMyReflections, deleteReflection } from "../../../lib/reflections";
+import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
+import { ROUTES } from "@/constants/routes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { createStyles } from "../../../styles/client/reflections/index.styles";
+import { deleteReflection, listMyReflections } from "@/lib/reflections";
+import { createStyles } from "@/styles/client/reflections/index.styles";
+
 export default function ReflectionsHistory() {
   const r = useRouter();
 
@@ -31,7 +34,7 @@ export default function ReflectionsHistory() {
       const data = await listMyReflections();
       setItems(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      console.log("❌ listMyReflections:", e?.message);
+      console.log("listMyReflections:", e?.message);
       setItems([]);
     } finally {
       setLoading(false);
@@ -43,20 +46,20 @@ export default function ReflectionsHistory() {
   }, []);
 
   function goBackSafe() {
-    if ((r as any).canGoBack?.()) (r as any).back();
-    else r.replace("/(client)/(tabs)/client-home" as any);
+    if (r.canGoBack()) r.back();
+    else r.replace(ROUTES.client.tabsHome);
   }
 
   function openDetail(item: any) {
     const id = item?.id;
     if (id === null || id === undefined || String(id).trim() === "") {
       Alert.alert("Erro", "Essa reflexão está sem ID (não dá para abrir).");
-      console.log("❌ item sem id:", item);
+      console.log("item sem id:", item);
       return;
     }
 
     r.push({
-      pathname: "/(client)/reflections/[id]" as any,
+      pathname: "/(client)/reflections/[id]",
       params: {
         id: String(id),
         can_delete: String(!!item?.can_delete),
@@ -66,33 +69,29 @@ export default function ReflectionsHistory() {
         resistance_or_disagreement: item?.resistance_or_disagreement ?? "",
         created_at: item?.created_at ?? "",
       },
-    } as any);
+    });
   }
 
   function confirmDelete(item: any) {
     const id = Number(item?.id);
     if (!Number.isFinite(id)) return;
 
-    Alert.alert(
-      "Excluir reflexão",
-      "Tem certeza que deseja excluir esta reflexão?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteReflection(id);
-              setItems((prev) => prev.filter((x) => x.id !== id));
-            } catch (e: any) {
-              console.log("❌ deleteReflection:", e?.message);
-              Alert.alert("Erro", "Não foi possível excluir.");
-            }
-          },
+    Alert.alert("Excluir reflexão", "Tem certeza que deseja excluir esta reflexão?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteReflection(id);
+            setItems((prev) => prev.filter((x) => x.id !== id));
+          } catch (e: any) {
+            console.log("deleteReflection:", e?.message);
+            Alert.alert("Erro", "Não foi possível excluir.");
+          }
         },
-      ]
-    );
+      },
+    ]);
   }
 
   return (
@@ -114,7 +113,7 @@ export default function ReflectionsHistory() {
         </View>
 
         <Pressable
-          onPress={() => r.push("/(client)/reflections/new" as any)}
+          onPress={() => r.push(ROUTES.client.newReflection)}
           hitSlop={16}
           style={styles.headerButton}
         >
@@ -124,12 +123,11 @@ export default function ReflectionsHistory() {
 
       <View style={styles.content}>
         {loading && items.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator />
-            <Text style={styles.loadingText}>
-              Carregando suas reflexões...
-            </Text>
-          </View>
+          <LoadingState
+            message="Carregando suas reflexões..."
+            style={styles.loadingContainer}
+            textStyle={styles.loadingText}
+          />
         ) : (
           <FlatList
             data={items}
@@ -170,11 +168,11 @@ export default function ReflectionsHistory() {
             )}
             ListEmptyComponent={
               !loading ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    Você ainda não criou nenhuma reflexão.
-                  </Text>
-                </View>
+                <EmptyState
+                  message="Você ainda não criou nenhuma reflexão."
+                  style={styles.emptyContainer}
+                  messageStyle={styles.emptyText}
+                />
               ) : null
             }
           />

@@ -1,9 +1,8 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { Platform, Alert } from "react-native";
 import { router } from "expo-router";
 
-import { getToken, clearToken } from "./token";
-import { clearSessionOnly } from "./remember";
+import { clearSession, getAuthToken } from "./session";
 
 /**
  * Fallbacks DEV (se .env estiver vazio)
@@ -19,7 +18,7 @@ const DEV_WEB_URL = "http://localhost:8000";
 const PROD_URL = "https://elomind.penademorte.org";
 
 /**
- * Em APK/release, sempre força produção.
+ * Em APK/release, sempre forÃ§a produÃ§Ã£o.
  * Em desenvolvimento, respeita EXPO_PUBLIC_API_MODE.
  */
 function isProdMode() {
@@ -30,8 +29,8 @@ function isProdMode() {
 /**
  * Decide baseURL:
  * - WEB -> local ou prod
- * - ANDROID -> por padrão DEVICE
- *    - só usa EMULATOR se EXPO_PUBLIC_ANDROID_TARGET=emulator
+ * - ANDROID -> por padrÃ£o DEVICE
+ *    - sÃ³ usa EMULATOR se EXPO_PUBLIC_ANDROID_TARGET=emulator
  * - iOS/outros -> DEVICE
  */
 function pickBaseURL() {
@@ -65,36 +64,17 @@ function pickBaseURL() {
     : process.env.EXPO_PUBLIC_API_URL_DEVICE || DEV_DEVICE_URL;
 }
 
-const FINAL_BASE_URL = pickBaseURL();
-
-console.log(
-  "🌐 API BASE_URL:",
-  FINAL_BASE_URL,
-  "| Platform:",
-  Platform.OS,
-  "| Mode:",
-  isProdMode() ? "prod" : "local",
-  "| __DEV__:",
-  __DEV__
-);
-
 export const api = axios.create({
-  baseURL: FINAL_BASE_URL,
+  baseURL: pickBaseURL(),
   timeout: 15000,
 });
 
-/**
- * Normaliza URL para logs e checagens internas.
- */
 function normalizeUrl(url?: string) {
   if (!url) return "/";
   if (url.startsWith("http")) return url;
   return `/${url.replace(/^\/+/, "")}`;
 }
 
-/**
- * Rotas públicas (não precisam de token).
- */
 function isPublicRoute(url?: string) {
   const u = normalizeUrl(url);
 
@@ -111,77 +91,48 @@ function isPublicRoute(url?: string) {
 
 let isForcingLogout = false;
 
-/**
- * Logout seguro.
- */
 async function forceLogout(reason: string) {
   if (isForcingLogout) return;
   isForcingLogout = true;
 
   try {
-    console.log("🚪 forceLogout:", reason);
-    await clearToken();
-    await clearSessionOnly();
-  } catch (e: any) {
-    console.log("⚠️ forceLogout erro:", e?.message || e);
+    console.log("ForÃ§ando logout da sessÃ£o:", reason);
+    await clearSession();
+  } catch (error: any) {
+    console.log(
+      "Erro ao limpar sessÃ£o durante logout forÃ§ado:",
+      error?.message || error
+    );
   } finally {
     router.replace("/(auth)/login");
     isForcingLogout = false;
   }
 }
 
-/**
- * Interceptor REQUEST
- */
 api.interceptors.request.use(
   async (config) => {
     const url = config.url ?? "";
-    const normalizedUrl = normalizeUrl(url);
-    const method = (config.method ?? "GET").toUpperCase();
-    const publicReq = isPublicRoute(url);
 
     config.headers = config.headers ?? {};
 
-    if (!publicReq) {
-      const token = await getToken();
-
-      console.log(
-        "🔐 Interceptor token:",
-        token ? "OK" : "NULL",
-        "->",
-        normalizedUrl
-      );
+    if (!isPublicRoute(url)) {
+      const token = await getAuthToken();
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-    } else {
-      console.log("🌍 Public route ->", normalizedUrl);
-    }
-
-    console.log("➡️", method, `${config.baseURL}${normalizedUrl}`);
-
-    if (config.data) {
-      console.log("📦 Request body:", config.data);
     }
 
     return config;
   },
   (error) => {
-    console.log("❌ Request interceptor error:", error?.message || error);
+    console.log("Erro no interceptor de request:", error?.message || error);
     return Promise.reject(error);
   }
 );
 
-/**
- * Interceptor RESPONSE
- */
 api.interceptors.response.use(
-  (response) => {
-    const url = normalizeUrl(response?.config?.url ?? "");
-    console.log("✅ API response:", response.status, url, response.data);
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const status = error?.response?.status;
     const url = normalizeUrl(error?.config?.url ?? "");
@@ -195,41 +146,33 @@ api.interceptors.response.use(
 
     const detail = String(detailRaw).toLowerCase();
 
-    console.log("❌ API error status:", status);
-    console.log("❌ API error url:", url);
-    console.log("❌ API error data:", error?.response?.data);
-    console.log("❌ API error message:", error?.message);
-
     if (isForcingLogout) {
       return Promise.reject(error);
     }
 
-    // Erro de rede sem resposta do servidor
     if (!error?.response) {
-      console.log("🌐 Falha de rede ou servidor indisponível");
+      console.log("Falha de rede ou servidor indisponÃ­vel");
       return Promise.reject(error);
     }
 
-    // 401 em rota privada
     if (status === 401) {
-      // não deslogar por erro no registro de push token
       if (url.includes("/push-tokens/")) {
-        console.log("⚠️ 401 em /push-tokens/ ignorado (sem logout)");
         return Promise.reject(error);
       }
 
-      // 401 em rota pública NÃO força logout
+      if (url.includes("/auth/logout")) {
+        return Promise.reject(error);
+      }
+
       if (publicReq) {
-        console.log("⚠️ 401 em rota pública, não vai deslogar");
         return Promise.reject(error);
       }
 
-      Alert.alert("Sessão expirada", "Faça login novamente.");
+      Alert.alert("SessÃ£o expirada", "FaÃ§a login novamente.");
       await forceLogout("401 Unauthorized");
       return Promise.reject(error);
     }
 
-    // Conta inativa
     if (status === 403 && detail.includes("inactive")) {
       if (url.includes("/auth/login")) {
         return Promise.reject(error);
@@ -246,3 +189,4 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+

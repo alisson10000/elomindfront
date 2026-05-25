@@ -1,16 +1,15 @@
 import React from "react";
-import { Pressable, Text, ActivityIndicator, ViewStyle, TextStyle } from "react-native";
+import { StyleProp, TextStyle, ViewStyle } from "react-native";
 
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import AppButton from "./AppButton";
 
 type Props = {
   title: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 };
 
 export default function Button({
@@ -21,40 +20,15 @@ export default function Button({
   style,
   textStyle,
 }: Props) {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
-
-  const isDisabled = !!disabled || !!loading;
-
   return (
-    <Pressable
+    <AppButton
+      title={title}
       onPress={onPress}
-      disabled={isDisabled}
-      style={[
-        {
-          paddingVertical: 14,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: theme.border,
-          backgroundColor: theme.card,
-          alignItems: "center",
-          opacity: isDisabled ? 0.7 : 1,
-        },
-        style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <Text
-          style={[
-            { fontSize: 16, fontWeight: "900", color: theme.text },
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
-      )}
-    </Pressable>
+      loading={loading}
+      disabled={disabled}
+      style={style}
+      textStyle={textStyle}
+      variant="secondary"
+    />
   );
 }

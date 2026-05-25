@@ -11,9 +11,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import { createReflection } from "../../../lib/reflections";
+import { ROUTES } from "@/constants/routes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { createReflection } from "@/lib/reflections";
 import { createStyles } from "@/styles/client/reflections/new.styles";
 
 export default function NewReflection() {
@@ -30,10 +31,8 @@ export default function NewReflection() {
   const [saving, setSaving] = useState(false);
 
   function goBackSafe() {
-    console.log("🔙 goBackSafe chamado");
-
-    if ((r as any).canGoBack?.()) (r as any).back();
-    else r.replace("/(client)/reflections" as any);
+    if (r.canGoBack()) r.back();
+    else r.replace(ROUTES.client.reflections);
   }
 
   async function onSubmit() {
@@ -60,9 +59,9 @@ export default function NewReflection() {
       });
 
       Alert.alert("Reflexão enviada!", "Sua reflexão foi salva com sucesso.");
-      r.replace("/(client)/reflections" as any);
+      r.replace(ROUTES.client.reflections);
     } catch (e: any) {
-      console.log("❌ createReflection:", e?.message);
+      console.log("createReflection:", e?.message);
       Alert.alert("Erro", "Não foi possível salvar.");
     } finally {
       setSaving(false);
@@ -75,12 +74,7 @@ export default function NewReflection() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.header}>
-        <Pressable
-          onPress={goBackSafe}
-          onPressIn={() => console.log("✅ pressionou VOLTAR")}
-          hitSlop={16}
-          style={styles.headerButton}
-        >
+        <Pressable onPress={goBackSafe} hitSlop={16} style={styles.headerButton}>
           <Text style={styles.headerButtonText}>← Voltar</Text>
         </Pressable>
 
@@ -138,7 +132,7 @@ export default function NewReflection() {
           value={resistance}
           onChangeText={setResistance}
           style={[styles.input, styles.lastInput]}
-          placeholder="Se quiser, descreva aqui…"
+          placeholder="Se quiser, descreva aqui..."
           placeholderTextColor={theme.icon}
           multiline
           textAlignVertical="top"

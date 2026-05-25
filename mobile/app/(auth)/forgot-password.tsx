@@ -1,20 +1,20 @@
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  Text,
+  View,
 } from "react-native";
 import { router } from "expo-router";
 
-import { api } from "../../lib/api";
-
+import AppButton from "@/components/AppButton";
+import AppInput from "@/components/AppInput";
+import FormField from "@/components/FormField";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { requestPasswordReset } from "@/lib/services/auth-service";
 import { makeStyles } from "@/styles/auth/forgot-password.styles";
 
 export default function ForgotPasswordScreen() {
@@ -35,31 +35,22 @@ export default function ForgotPasswordScreen() {
 
     try {
       setLoading(true);
-
-      await api.post("/auth/forgot-password", { email: emailTrim });
-
-      Alert.alert(
-        "Pronto!",
-        "Se esse email existir, enviamos um código/token. Digite ele na próxima tela junto com sua nova senha."
-      );
-
-      router.push({
-        pathname: "/reset-password",
-        params: { email: emailTrim },
-      } as any);
+      await requestPasswordReset({ email: emailTrim });
     } catch {
-      Alert.alert(
-        "Pronto!",
-        "Se esse email existir, enviamos um código/token. Digite ele na próxima tela junto com sua nova senha."
-      );
-
-      router.push({
-        pathname: "/reset-password",
-        params: { email: emailTrim },
-      } as any);
+      // Mantém o comportamento atual: a resposta é sempre genérica.
     } finally {
       setLoading(false);
     }
+
+    Alert.alert(
+      "Pronto!",
+      "Se esse email existir, enviamos um código/token. Digite ele na próxima tela junto com sua nova senha."
+    );
+
+    router.push({
+      pathname: "/(auth)/reset-password",
+      params: { email: emailTrim },
+    });
   }
 
   function goBack() {
@@ -86,44 +77,40 @@ export default function ForgotPasswordScreen() {
           </Text>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
+            <FormField label="Email" labelStyle={styles.label}>
+              <AppInput
+                inputStyle={styles.input}
+                testID="forgot-password-email-input"
+                placeholder="seuemail@exemplo.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+                returnKeyType="done"
+              />
+            </FormField>
 
-            <TextInput
-              style={styles.input}
-              placeholder="seuemail@exemplo.com"
-              placeholderTextColor={theme.placeholder}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              editable={!loading}
-              returnKeyType="done"
-            />
-
-            <Pressable
+            <AppButton
+              title={loading ? "Enviando..." : "Enviar código"}
               onPress={handleSend}
               disabled={loading}
-              style={({ pressed }) => [
+              style={[
                 styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
                 loading && styles.primaryButtonDisabled,
               ]}
-            >
-              <Text style={styles.primaryButtonText}>
-                {loading ? "Enviando..." : "Enviar código"}
-              </Text>
-            </Pressable>
+            />
 
-            <Pressable
+            <AppButton
+              title="Voltar"
               onPress={goBack}
               disabled={loading}
+              variant="secondary"
               style={[
                 styles.secondaryButton,
                 loading && styles.primaryButtonDisabled,
               ]}
-            >
-              <Text style={styles.secondaryButtonText}>Voltar</Text>
-            </Pressable>
+            />
           </View>
         </View>
       </View>

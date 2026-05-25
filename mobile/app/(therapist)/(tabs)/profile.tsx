@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { clearToken, getToken } from "../../../lib/token";
+import { logout } from "@/lib/auth";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { makeStyles } from "@/styles/therapist/tabs/profile.styles";
@@ -13,22 +12,8 @@ export default function TherapistProfileScreen() {
   const theme = Colors[colorScheme ?? "light"];
   const styles = makeStyles(theme);
 
-  useEffect(() => {
-    console.log("✅ THERAPIST PROFILE ABRIU (mount)");
-  }, []);
-
   async function handleLogout() {
-    console.log("🚪 CLICOU EM SAIR (THERAPIST)");
-
-    const before = await getToken();
-    console.log("🔍 Token ANTES:", before ? "TEM ✅" : "NÃO ❌");
-
-    await clearToken();
-    await AsyncStorage.removeItem("user_role");
-
-    const after = await getToken();
-    console.log("🧪 Token DEPOIS:", after ? "TEM ✅" : "NÃO ❌");
-
+    await logout();
     router.replace("/(auth)/login");
   }
 

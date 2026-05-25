@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ROUTES } from "@/constants/routes";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { listClients, setClientActive } from "../../../lib/users";
 import { createStyles } from "@/styles/therapist/client/clients.styles";
@@ -37,7 +38,7 @@ export default function TherapistClientsScreen() {
       const data = await listClients();
       setItems(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      console.log("❌ listClients:", e?.message);
+      console.log("listClients:", e?.message);
       setItems([]);
       Alert.alert("Erro", "Não foi possível carregar os clientes.");
     } finally {
@@ -52,7 +53,6 @@ export default function TherapistClientsScreen() {
   async function toggleClient(item: Client) {
     const next = !item.is_active;
 
-    // atualização otimista
     setItems((prev) =>
       prev.map((c) => (c.id === item.id ? { ...c, is_active: next } : c))
     );
@@ -60,9 +60,8 @@ export default function TherapistClientsScreen() {
     try {
       await setClientActive(item.id, next);
     } catch (e: any) {
-      console.log("❌ setClientActive:", e?.message);
+      console.log("setClientActive:", e?.message);
 
-      // rollback
       setItems((prev) =>
         prev.map((c) => (c.id === item.id ? { ...c, is_active: !next } : c))
       );
@@ -72,8 +71,8 @@ export default function TherapistClientsScreen() {
   }
 
   function goBackSafe() {
-    if ((r as any).canGoBack?.()) (r as any).back();
-    else r.replace("/(therapist)/(tabs)/therapist-home" as any);
+    if (r.canGoBack()) r.back();
+    else r.replace(ROUTES.therapist.tabsHome);
   }
 
   function StatusPill({ active }: { active: boolean }) {
@@ -88,7 +87,6 @@ export default function TherapistClientsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      {/* Header (agora respeita status bar) */}
       <View style={styles.header}>
         <Pressable onPress={goBackSafe} hitSlop={16} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Voltar</Text>
@@ -102,7 +100,6 @@ export default function TherapistClientsScreen() {
         </View>
       </View>
 
-      {/* Conteúdo */}
       <View style={styles.content}>
         {loading && items.length === 0 ? (
           <View style={styles.loadingContainer}>
@@ -130,11 +127,14 @@ export default function TherapistClientsScreen() {
                     <StatusPill active={isActive} />
                   </View>
 
-                  {/* ✅ Ações */}
                   <View style={styles.actions}>
-                    {/* ✅ NOVO: Sonhos (por cliente) */}
                     <Pressable
-                      onPress={() => r.push(`/(therapist)/dreams?client_id=${item.id}` as any)}
+                      onPress={() =>
+                        r.push({
+                          pathname: ROUTES.therapist.dreams,
+                          params: { client_id: String(item.id) },
+                        })
+                      }
                       hitSlop={16}
                       style={[
                         styles.defaultActionButton,
@@ -144,10 +144,12 @@ export default function TherapistClientsScreen() {
                       <Text style={styles.defaultActionButtonText}>Sonhos</Text>
                     </Pressable>
 
-                    {/* ✅ NOVO: Anamnese (por cliente) */}
                     <Pressable
                       onPress={() =>
-                        r.push(`/(therapist)/anamnesis/${item.id}` as any)
+                        r.push({
+                          pathname: "/(therapist)/anamnesis/[id]",
+                          params: { id: String(item.id) },
+                        })
                       }
                       hitSlop={16}
                       style={[
@@ -161,12 +163,12 @@ export default function TherapistClientsScreen() {
                     <Pressable
                       onPress={() =>
                         r.push({
-                          pathname: "/(therapist)/lgpd/delete-client" as any,
+                          pathname: ROUTES.therapist.deleteClientLgpd,
                           params: {
                             client_id: String(item.id),
                             client_name: item.name,
                           },
-                        } as any)
+                        })
                       }
                       hitSlop={16}
                       style={[
@@ -179,7 +181,6 @@ export default function TherapistClientsScreen() {
                       </Text>
                     </Pressable>
 
-                    {/* Botão Ativar/Desativar */}
                     <Pressable
                       onPress={() => toggleClient(item)}
                       hitSlop={16}

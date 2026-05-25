@@ -1,68 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
-  ActivityIndicator,
-  Alert,
+  Text,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ROUTES } from "@/constants/routes";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { listFeedbacksByClient } from "@/lib/feedback";
+import { listClients } from "@/lib/services/user-service";
+import type { ClientSummary } from "@/lib/types/user";
 import { createStyles } from "@/styles/therapist/feedbacks/index.styles";
 
-import { api } from "@/lib/api";
-import { getToken } from "@/lib/token";
-import { listFeedbacksByClient } from "@/lib/feedback";
-
-type ClientItem = {
-  id: number;
-  name?: string | null;
-  email?: string | null;
-};
-
-type ClientWithFeedback = ClientItem & {
+type ClientWithFeedback = ClientSummary & {
   feedbackCount: number;
 };
 
-function pickName(c: any): string | null {
-  return (
-    c?.name ??
-    c?.full_name ??
-    c?.client_name ??
-    c?.user?.name ??
-    c?.user?.full_name ??
-    null
-  );
-}
-
-/**
- * ✅ No seu backend (Swagger) existe GET /users/clients
- * então é daqui que vamos puxar a lista de clientes.
- */
-async function fetchClients(token: string): Promise<ClientItem[]> {
-  const res = await api.get("/users/clients", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  const raw = (res.data?.items ?? res.data) as any;
-  const arr = Array.isArray(raw) ? raw : [];
-
-  return arr
-    .map((c: any) => ({
-      id: Number(c?.id ?? c?.client_id ?? c?.user_id),
-      name: pickName(c),
-      email: c?.email ?? c?.user?.email ?? null,
-    }))
-    .filter((x: any) => Number.isFinite(x.id) && x.id > 0);
-}
-
 export default function TherapistFeedbacksIndexScreen() {
-  console.log("✅ ABRIU: therapist/feedbacks/index");
-
   const r = useRouter();
   const colorScheme = useColorScheme();
   const styles = createStyles((colorScheme ?? "light") as "light" | "dark");
@@ -71,49 +31,44 @@ export default function TherapistFeedbacksIndexScreen() {
   const [clients, setClients] = useState<ClientWithFeedback[]>([]);
 
   const goBackSafe = useCallback(() => {
-    if ((r as any).canGoBack?.()) (r as any).back();
-    else r.replace("/(therapist)/(tabs)/therapist-home" as any);
+    if (r.canGoBack()) r.back();
+    else r.replace(ROUTES.therapist.tabsHome);
   }, [r]);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
 
-      const token = await getToken();
-      if (!token) {
-        Alert.alert("Sessão expirada", "Faça login novamente.");
-        r.replace("/(auth)/login" as any);
-        return;
-      }
-
-      // 1) pega clientes (via /users/clients)
-      const baseClients = await fetchClients(token);
-
-      console.log("✅ baseClients:", baseClients.length, baseClients.slice(0, 3));
-
-      // 2) filtra só quem tem feedback e calcula a contagem
+      const baseClients = await listClients();
       const results: ClientWithFeedback[] = [];
 
-      for (const c of baseClients) {
+      for (const client of baseClients) {
         try {
-          console.log("➡️ contando feedbacks do cliente", c.id);
-
-          const arr = await listFeedbacksByClient(c.id);
+          const arr = await listFeedbacksByClient(client.id);
           const count = Array.isArray(arr) ? arr.length : 0;
 
-          if (count > 0) results.push({ ...c, feedbackCount: count });
-        } catch (e: any) {
-          // não quebra a tela por causa de 1 cliente
-          console.log("⚠️ erro contando feedbacks do cliente", c.id, e?.message);
+          if (count > 0) {
+            results.push({ ...client, feedbackCount: count });
+          }
+        } catch (error: any) {
+          console.log(
+            "Erro contando feedbacks do cliente",
+            client.id,
+            error?.message
+          );
         }
       }
 
-      // 3) ordena por quantidade (desc)
       results.sort((a, b) => b.feedbackCount - a.feedbackCount);
-
       setClients(results);
-    } catch (e: any) {
-      console.log("❌ feedbacks/index load:", e?.message);
+    } catch (error: any) {
+      if (error?.message === "NO_TOKEN") {
+        Alert.alert("Sessão expirada", "Faça login novamente.");
+        r.replace(ROUTES.auth.login);
+        return;
+      }
+
+      console.log("feedbacks/index load:", error?.message);
       setClients([]);
       Alert.alert("Erro", "Não foi possível carregar os clientes com feedback.");
     } finally {
@@ -127,21 +82,15 @@ export default function TherapistFeedbacksIndexScreen() {
 
   const subtitle = useMemo(() => {
     if (loading) return "Carregando...";
-    return clients.length > 0 ? "Selecione um cliente" : "Nenhum feedback encontrado";
+    return clients.length > 0
+      ? "Selecione um cliente"
+      : "Nenhum feedback encontrado";
   }, [loading, clients.length]);
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      edges={["top", "left", "right"]}
-    >
-      {/* Header */}
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.header}>
-        <Pressable
-          onPress={goBackSafe}
-          hitSlop={16}
-          style={styles.backButton}
-        >
+        <Pressable onPress={goBackSafe} hitSlop={16} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Voltar</Text>
         </Pressable>
 
@@ -151,7 +100,6 @@ export default function TherapistFeedbacksIndexScreen() {
         </View>
       </View>
 
-      {/* Conteúdo */}
       <View style={styles.content}>
         {loading && clients.length === 0 ? (
           <View style={styles.loadingContainer}>
@@ -162,14 +110,21 @@ export default function TherapistFeedbacksIndexScreen() {
           <FlatList
             data={clients}
             keyExtractor={(item) => String(item.id)}
-            refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={load} />
+            }
             contentContainerStyle={styles.listContent}
             renderItem={({ item }) => {
               const title = item.name?.trim() || `Cliente #${item.id}`;
 
               return (
                 <Pressable
-                  onPress={() => r.push(`/(therapist)/feedbacks/${item.id}` as any)}
+                  onPress={() =>
+                    r.push({
+                      pathname: "/(therapist)/feedbacks/[id]",
+                      params: { id: String(item.id) },
+                    })
+                  }
                   style={styles.card}
                 >
                   <Text style={styles.cardTitle}>{title}</Text>

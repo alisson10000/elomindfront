@@ -1,5 +1,7 @@
 import { Redirect } from "expo-router";
 
+import { ROUTES } from "@/constants/routes";
+
 export default function ClientTabsIndex() {
-  return <Redirect href={"/(client)/(tabs)/client-home" as any} />;
+  return <Redirect href={ROUTES.client.tabsHome} />;
 }

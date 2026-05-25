@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { api } from "@/lib/api";
+import { validateInvitationToken } from "@/lib/services/invitation-service";
 import { makeStyles } from "@/styles/auth/invite-code.styles";
 
 export default function InviteCodeScreen() {
@@ -41,16 +41,13 @@ export default function InviteCodeScreen() {
     try {
       setLoading(true);
 
-      const res = await api.get("/invitations/validate", {
-        params: { token: cleanCode },
-      });
-
-      const email = res?.data?.email ?? "";
+      const res = await validateInvitationToken({ token: cleanCode });
+      const email = res?.email ?? "";
 
       router.push({
         pathname: "/(auth)/invite-signup",
         params: { code: cleanCode, email },
-      } as any);
+      });
     } catch (err: any) {
       const detail =
         err?.response?.data?.detail ||

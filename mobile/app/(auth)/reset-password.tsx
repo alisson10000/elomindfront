@@ -1,19 +1,21 @@
 import { useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  Text,
+  View,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import { api } from "../../lib/api";
 
+import AppButton from "@/components/AppButton";
+import AppInput from "@/components/AppInput";
+import FormField from "@/components/FormField";
+import { ROUTES } from "@/constants/routes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { resetPassword } from "@/lib/services/auth-service";
 import { makeStyles } from "@/styles/auth/reset-password.styles";
 
 export default function ResetPasswordScreen() {
@@ -57,14 +59,14 @@ export default function ResetPasswordScreen() {
     try {
       setLoading(true);
 
-      await api.post("/auth/reset-password", {
+      await resetPassword({
         email,
         token: token.trim(),
         password,
       });
 
       Alert.alert("Sucesso", "Senha atualizada. Faça login novamente.");
-      router.replace("/login" as any);
+      router.replace(ROUTES.auth.login);
     } catch (e: any) {
       const msg =
         e?.response?.data?.detail ||
@@ -100,78 +102,72 @@ export default function ResetPasswordScreen() {
           </Text>
 
           <View style={styles.form}>
-            <View>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
+            <FormField label="Email" labelStyle={styles.label}>
+              <AppInput
+                inputStyle={[styles.input, styles.disabledInput]}
+                testID="reset-password-email-input"
                 value={email}
                 editable={false}
-                style={[styles.input, styles.disabledInput]}
+                selectTextOnFocus={false}
               />
-            </View>
+            </FormField>
 
-            <View>
-              <Text style={styles.label}>Código / Token</Text>
-              <TextInput
+            <FormField label="Código / Token" labelStyle={styles.label}>
+              <AppInput
+                inputStyle={styles.input}
+                testID="reset-password-token-input"
                 placeholder="Cole aqui o código/token"
-                placeholderTextColor={theme.placeholder}
                 autoCapitalize="none"
                 value={token}
                 onChangeText={setToken}
                 editable={!loading}
-                style={styles.input}
               />
-            </View>
+            </FormField>
 
-            <View>
-              <Text style={styles.label}>Nova senha</Text>
-              <TextInput
+            <FormField label="Nova senha" labelStyle={styles.label}>
+              <AppInput
+                inputStyle={styles.input}
+                testID="reset-password-password-input"
                 placeholder="••••••••"
-                placeholderTextColor={theme.placeholder}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
                 editable={!loading}
-                style={styles.input}
               />
-            </View>
+            </FormField>
 
-            <View>
-              <Text style={styles.label}>Confirmar senha</Text>
-              <TextInput
+            <FormField label="Confirmar senha" labelStyle={styles.label}>
+              <AppInput
+                inputStyle={styles.input}
+                testID="reset-password-confirm-input"
                 placeholder="••••••••"
-                placeholderTextColor={theme.placeholder}
                 secureTextEntry
                 value={confirm}
                 onChangeText={setConfirm}
                 editable={!loading}
-                style={styles.input}
               />
-            </View>
+            </FormField>
 
-            <Pressable
+            <AppButton
+              title={loading ? "Salvando..." : "Salvar nova senha"}
               onPress={handleReset}
               disabled={loading}
-              style={({ pressed }) => [
+              style={[
                 styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
                 loading && styles.primaryButtonDisabled,
               ]}
-            >
-              <Text style={styles.primaryButtonText}>
-                {loading ? "Salvando..." : "Salvar nova senha"}
-              </Text>
-            </Pressable>
+            />
 
-            <Pressable
+            <AppButton
+              title="Voltar"
               onPress={goBack}
               disabled={loading}
+              variant="secondary"
               style={[
                 styles.secondaryButton,
                 loading && styles.primaryButtonDisabled,
               ]}
-            >
-              <Text style={styles.secondaryButtonText}>Voltar</Text>
-            </Pressable>
+            />
           </View>
         </View>
       </View>
