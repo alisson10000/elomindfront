@@ -11,8 +11,13 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+<<<<<<< HEAD
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getTherapistReflectionsStyles } from "@/styles/therapist/reflections/reflections.styles";
+=======
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
 import { listPendingReflections } from "../../../lib/reflections";
 
 type PendingReflection = {
@@ -26,7 +31,11 @@ type PendingReflection = {
 export default function TherapistReflectionsIndex() {
   const r = useRouter();
   const colorScheme = useColorScheme();
+<<<<<<< HEAD
   const styles = getTherapistReflectionsStyles(colorScheme);
+=======
+  const theme = Colors[colorScheme ?? "light"];
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
 
   const [items, setItems] = useState<PendingReflection[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,6 +64,10 @@ export default function TherapistReflectionsIndex() {
   }
 
   function openDetail(item: PendingReflection) {
+<<<<<<< HEAD
+=======
+    // manda o ID via rota dinâmica
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
     r.push(`/(therapist)/reflections/${item.id}` as any);
   }
 
@@ -67,6 +80,7 @@ export default function TherapistReflectionsIndex() {
   }
 
   return (
+<<<<<<< HEAD
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Pressable
@@ -88,11 +102,64 @@ export default function TherapistReflectionsIndex() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator />
             <Text style={styles.loadingText}>Carregando reflexões...</Text>
+=======
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      edges={["top", "left", "right"]}
+    >
+      {/* Header */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+          backgroundColor: theme.background,
+        }}
+      >
+        <Pressable
+          onPress={goBackSafe}
+          hitSlop={16}
+          style={{
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: theme.border,
+            backgroundColor: theme.card,
+          }}
+        >
+          <Text style={{ color: theme.text, fontWeight: "900" }}>← Voltar</Text>
+        </Pressable>
+
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: "900" }}>
+            Reflexões Pendentes
+          </Text>
+          <Text style={{ color: theme.muted, marginTop: 2 }}>
+            Itens sem feedback aprovado
+          </Text>
+        </View>
+      </View>
+
+      {/* Conteúdo */}
+      <View style={{ flex: 1, padding: 16 }}>
+        {loading && items.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator />
+            <Text style={{ marginTop: 10, color: theme.muted }}>
+              Carregando reflexões...
+            </Text>
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
           </View>
         ) : (
           <FlatList
             data={items}
             keyExtractor={(item) => String(item.id)}
+<<<<<<< HEAD
             refreshControl={
               <RefreshControl refreshing={loading} onRefresh={load} />
             }
@@ -113,12 +180,48 @@ export default function TherapistReflectionsIndex() {
                 </Text>
 
                 <Text style={styles.openDetailText}>Abrir detalhe →</Text>
+=======
+            refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+            contentContainerStyle={{ paddingBottom: 16 }}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => openDetail(item)}
+                style={{
+                  padding: 14,
+                  borderWidth: 1,
+                  borderRadius: 14,
+                  marginBottom: 10,
+                  borderColor: theme.border,
+                  backgroundColor: theme.card,
+                }}
+              >
+                <Text style={{ fontWeight: "900", color: theme.text, fontSize: 16 }}>
+                  {item.client_name}
+                </Text>
+
+                <Text numberOfLines={2} style={{ marginTop: 6, color: theme.text }}>
+                  {item.feeling_after_session}
+                </Text>
+
+                <Text style={{ marginTop: 6, color: theme.muted }}>
+                  {formatDate(item.created_at)}
+                </Text>
+
+                <Text style={{ marginTop: 6, color: theme.primary, fontWeight: "900" }}>
+                  Abrir detalhe →
+                </Text>
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
               </Pressable>
             )}
             ListEmptyComponent={
               !loading ? (
+<<<<<<< HEAD
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
+=======
+                <View style={{ paddingTop: 18 }}>
+                  <Text style={{ color: theme.muted }}>
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
                     Nenhuma reflexão pendente no momento.
                   </Text>
                 </View>
@@ -129,4 +232,8 @@ export default function TherapistReflectionsIndex() {
       </View>
     </SafeAreaView>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Stack, router } from "expo-router";
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
@@ -52,12 +53,20 @@ export default function RootLayout() {
     };
   }, []);
 
+=======
+import { Stack } from "expo-router";
+
+export default function RootLayout() {
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(therapist)" />
+<<<<<<< HEAD
       <Stack.Screen name="(client)" />
+=======
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
     </Stack>
   );
 }

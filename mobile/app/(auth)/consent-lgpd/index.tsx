@@ -4,13 +4,21 @@ import { router } from "expo-router";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+<<<<<<< HEAD
 import { acceptConsent } from "@/lib/services/consent-service";
+=======
+import { api } from "@/lib/api";
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
 
 import Screen from "@/components/Screen";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 
+<<<<<<< HEAD
 import { createStyles } from "../../../styles/auth/consent-lgpd.styles";
+=======
+import { createStyles } from "./styles";
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
 
 export default function ConsentLgpdScreen() {
   const colorScheme = useColorScheme();
@@ -28,9 +36,15 @@ export default function ConsentLgpdScreen() {
 
     try {
       setLoading(true);
+<<<<<<< HEAD
       await acceptConsent();
       Alert.alert("Obrigado!", "Consentimento registrado.");
       router.replace("/(client)/(tabs)/client-home");
+=======
+      await api.post("/consents", { accepted: true });
+      Alert.alert("Obrigado!", "Consentimento registrado.");
+      router.replace("/(client)/(tabs)" as any);
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
     } catch (err: any) {
       const detail =
         err?.response?.data?.detail ||

@@ -1,4 +1,5 @@
 import { Tabs } from "expo-router";
+<<<<<<< HEAD
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,6 +54,14 @@ export default function ClientTabsLayout() {
           href: null,
         }}
       />
+=======
+
+export default function ClientTabsLayout() {
+  return (
+    <Tabs screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="client-home" options={{ title: "Início" }} />
+      <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
     </Tabs>
   );
 }

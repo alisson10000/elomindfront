@@ -19,9 +19,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
+<<<<<<< HEAD
       "predictiveBackGestureEnabled": false,
       "package": "com.alisson10000.mobile",
       "googleServicesFile": "./google-services.json"
+=======
+      "predictiveBackGestureEnabled": false
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
     },
     "web": {
       "output": "static",
@@ -29,7 +33,10 @@
     },
     "plugins": [
       "expo-router",
+<<<<<<< HEAD
       "expo-notifications",
+=======
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
       [
         "expo-splash-screen",
         {
@@ -46,6 +53,7 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+<<<<<<< HEAD
     },
     "extra": {
       "router": {},
@@ -56,3 +64,8 @@
     "owner": "alisson10000"
   }
 }
+=======
+    }
+  }
+}
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8

@@ -21,7 +21,10 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
 # debug
 npm-debug.*
 yarn-debug.*
@@ -42,6 +45,9 @@ app-example
 # generated native folders
 /ios
 /android
+<<<<<<< HEAD
 android/local.properties
 mobile/firebase/*.json
 mobile/firebase/elomind-d50b7-firebase-adminsdk-fbsvc-26b42e2f9d.json
+=======
+>>>>>>> 18fb86c88667169eb7f2572849096180318f03a8
